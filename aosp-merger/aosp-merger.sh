@@ -26,6 +26,21 @@ usage() {
     echo "Usage ${0} <oldaosptag> <newaosptag>"
 }
 
+gco_original() {
+    lineNO=$(grep -nw -m 1 $PROJECTPATH $SAVEDBRANCHES | grep -Eo '^[^:]+')
+    if [[ $? == 0 ]]; then
+        line=$(sed "${lineNO}q;d" $SAVEDBRANCHES)
+        line=$(echo $line | sed "s,^.*-> ,,")
+        echo -e "Returning to ${BLUE}${line}${NC} on ${BLUE}${PROJECTPATH}${NC}"
+        git checkout $line > /dev/null 2>&1
+    else
+        echo -e "${YELLOW}Default branch for ${BLUE}${PROJECTPATH}${YELLOW} not found. Checking out to ${BLUE}${DEFAULTREMOTE0}/${DEFAULTBRANCH}${NC}"
+        git checkout $DEFAULTREMOTE/$DEFAULTBRANCH > /dev/null 2>&1
+    fi
+    git branch -d $STAGINGBRANCH
+    echo -e "Removed ${BLUE}${STAGINGBRANCH}${NC}"
+}
+
 # Verify argument count
 if [ "$#" -ne 2 ]; then
     usage
@@ -67,21 +82,34 @@ done
 
 echo -e "Old tag = ${BLUE}${OLDTAG}${NC} Branch = ${BLUE}${DEFAULTBRANCH}${NC} Staging branch = ${BLUE}${STAGINGBRANCH}${NC} Remote = ${BLUE}${DEFAULTREMOTE}${NC}"
 
+# Remove and create an empty list file of saved branches
+rm -f "${SAVEDBRANCHES}"
+touch "${SAVEDBRANCHES}"
+
+# Remove any existing list of merged repos file
+rm -f "${MERGEDREPOS}"
+
 # Make sure manifest and forked repos are in a consistent state
-echo "#### Verifying there are no uncommitted changes on forked AOSP projects ####"
+echo "#### Verifying there are no uncommitted changes on forked AOSP projects and saving local branches ####"
 for PROJECTPATH in ${PROJECTPATHS} .repo/manifests; do
     cd "${TOP}/${PROJECTPATH}"
     if [[ -n "$(git status --porcelain)" ]]; then
         echo -e "${RED}Path ${BLUE}${PROJECTPATH}${RED} has uncommitted changes. Please fix.${NC}"
         exit 1
     fi
+
+    # save the current branch
+    LOCALBRANCH=$(git rev-parse --abbrev-ref HEAD)
+    if [[ $LOCALBRANCH != "HEAD" ]]; then
+        echo "${PROJECTPATH} -> ${LOCALBRANCH}" >> $SAVEDBRANCHES
+    else
+        echo "${PROJECTPATH} -> ${DEFAULTREMOTE}/${DEFAULTBRANCH}" >> $SAVEDBRANCHES
+    fi
+
     # Making sure we are checked-out to the head of the default remote
     git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
 done
 echo -e "${GREEN}#### Verification complete - no uncommitted changes found ####${NC}"
-
-# Remove any existing list of merged repos file
-rm -f "${MERGEDREPOS}"
 
 # Sync and detach from current branches
 repo sync -d
@@ -103,11 +131,12 @@ for PROJECTPATH in ${PROJECTPATHS}; do
         continue
     fi
 
-    # Was there any change upstream? Skip if not.
+    # Was there any change upstream? Return to default branch and skip if not.
     if [[ -z "$(git diff ${OLDTAG} ${NEWTAG})" ]]; then
         echo -en "${GREEN}"
         echo -e "nochange\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
         echo -e "${NC}"
+        gco_original
         continue
     fi
 
