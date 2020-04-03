@@ -23,7 +23,7 @@ BLUE="\033[1;36m" # For info
 NC="\033[0m" # reset color
 
 usage() {
-    echo "Usage ${0} <oldaosptag> <newaosptag>"
+    echo "Usage: ${0} (--delete-staging) <oldaosptag> <newaosptag>"
 }
 
 gco_original() {
@@ -57,12 +57,34 @@ git_push() {
     fi
 }
 
+# Handle flags
+isRemoveStaging=0
+while [[ $# > 2 ]]; do
+    case "$1" in
+        "--delete-staging") # delete the staging branch
+        echo -en "Are you sure? y/[n] > "
+        read ans
+        if [[ $ans == 'y' ]]; then
+            isRemoveStaging=1
+        else
+            echo -e "${RED}Aborting${NC}"
+            exit 0
+        fi
+        shift
+        ;;
+        -*|--*) # unsupported flags
+        echo -e "${RED}ERROR! Unsupported flag ${BLUE}$1${NC}" >&2
+        usage
+        exit 1
+        ;;
+    esac
+done
+
 # Verify argument count
 if [ "$#" -ne 2 ]; then
     usage
     exit 1
 fi
-
 OLDTAG="${1}"
 NEWTAG="${2}"
 
@@ -97,6 +119,21 @@ for PROJECTPATH in ${PROJECTPATHS}; do
 done
 
 echo -e "Old tag = ${BLUE}${OLDTAG}${NC} Branch = ${BLUE}${DEFAULTBRANCH}${NC} Staging branch = ${BLUE}${STAGINGBRANCH}${NC} Remote = ${BLUE}${DEFAULTREMOTE}${NC}"
+echo
+
+if [[ $isRemoveStaging == 1 ]]; then
+    echo -e "#### Removing all staging branches for tag ${BLUE}${NEWTAG}${NC} ####"
+    for PROJECTPATH in ${PROJECTPATHS}; do
+        cd "${TOP}/${PROJECTPATH}"
+        git show-ref --verify --quiet refs/heads/$STAGINGBRANCH
+        # if staging branch exists on the repo
+        if [[ $? == 0 ]]; then
+            gco_original
+        fi
+    done
+    echo -e "${GREEN}Removed ${BLUE}${STAGINGBRANCH}${GREEN} from all forked repos${NC}"
+    exit 0
+fi
 
 # Remove and create an empty list file of saved branches
 rm -f "${SAVEDBRANCHES}"
