@@ -23,23 +23,17 @@ BLUE="\033[1;36m" # For info
 NC="\033[0m" # reset color
 
 usage() {
-    echo "Usage ${0} <merge|rebase> <oldaosptag> <newaosptag>"
+    echo "Usage ${0} <oldaosptag> <newaosptag>"
 }
 
 # Verify argument count
-if [ "$#" -ne 3 ]; then
+if [ "$#" -ne 2 ]; then
     usage
     exit 1
 fi
 
-OPERATION="${1}"
-OLDTAG="${2}"
-NEWTAG="${3}"
-
-if [ "${OPERATION}" != "merge" -a "${OPERATION}" != "rebase" ]; then
-    usage
-    exit 1
-fi
+OLDTAG="${1}"
+NEWTAG="${2}"
 
 # Check to make sure this is being run from the top level repo dir
 if [ ! -e "build/envsetup.sh" ]; then
@@ -99,8 +93,6 @@ for PROJECTPATH in ${PROJECTPATHS}; do
     aospremote
     git fetch -q --tags aosp "${NEWTAG}"
 
-    PROJECTOPERATION="${OPERATION}"
-
     # Check if we've actually changed anything before attempting to merge
     # If we haven't, just "git reset --hard" to the tag
     if [[ -z "$(git diff HEAD ${OLDTAG})" ]]; then
@@ -119,23 +111,6 @@ for PROJECTPATH in ${PROJECTPATHS}; do
         continue
     fi
 
-    # Determine whether OLDTAG is an ancestor of NEWTAG
-    # ie is history consistent.
-    git merge-base --is-ancestor "${OLDTAG}" "${NEWTAG}"
-    # If no, force rebase.
-    if [[ "$?" -eq 1 ]]; then
-        echo -n "#### Project ${PROJECTPATH} old tag ${OLD} is not an ancestor "
-        echo    "of new tag ${NEWTAG}, forcing rebase ####"
-        PROJECTOPERATION="rebase"
-    fi
-
-    if [[ "${PROJECTOPERATION}" == "merge" ]]; then
-        echo "#### Merging ${NEWTAG} into ${PROJECTPATH} ####"
-        git merge --no-edit --log "${NEWTAG}"
-    elif [[ "${PROJECTOPERATION}" == "rebase" ]]; then
-        echo "#### Rebasing ${PROJECTPATH} onto ${NEWTAG} ####"
-        git rebase --onto "${NEWTAG}" "${OLDTAG}"
-    fi
     echo -e "#### Merging ${BLUE}${NEWTAG}${NC} into ${BLUE}${PROJECTPATH}${NC} ####"
     git merge --no-edit --log "${NEWTAG}"
 
@@ -158,9 +133,9 @@ for PROJECTPATH in ${PROJECTPATHS}; do
                 git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
                 git branch --delete $STAGINGBRANCH
                 echo
-                echo "pushed-${PROJECTOPERATION}\t\t${PROJECTPATH}" >> $MERGEDREPOS
+                echo "pushed-${PROJECTPATH}" >> $MERGEDREPOS
             else
-                echo "${PROJECTOPERATION}\t\t${PROJECTPATH}" >> $MERGEDREPOS
+                echo "${PROJECTPATH}" >> $MERGEDREPOS
             fi
         else
             echo -en "${RED}"
@@ -168,7 +143,7 @@ for PROJECTPATH in ${PROJECTPATHS}; do
             echo -en "${NC}"
         fi
     else
-        echo -e "${GREEN}${PROJECTOPERATION}d ${BLUE}${PROJECTPATH}${GREEN} with no conflicts${NC}"
+        echo -e "${GREEN}Merged ${BLUE}${PROJECTPATH}${GREEN} with no conflicts${NC}"
         echo -n "Push changes to default branch ${BLUE}${DEFAULTBRANCH}${NC}? y/[n] > "
         read ans
         if [[ $ans == 'y' ]]; then
@@ -177,9 +152,9 @@ for PROJECTPATH in ${PROJECTPATHS}; do
             git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
             git branch --delete $STAGINGBRANCH
             echo
-            echo "pushed-${PROJECTOPERATION}\t\t${PROJECTPATH}" >> $MERGEDREPOS
+            echo "pushed-\t\t${PROJECTPATH}" >> $MERGEDREPOS
         else
-            echo "${PROJECTOPERATION}\t\t${PROJECTPATH}" >> $MERGEDREPOS
+            echo "${PROJECTPATH}" >> $MERGEDREPOS
         fi
     fi
 
