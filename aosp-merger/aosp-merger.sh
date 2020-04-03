@@ -41,6 +41,22 @@ gco_original() {
     echo -e "Removed ${BLUE}${STAGINGBRANCH}${NC}"
 }
 
+git_push() {
+    echo -en "Push changes to default branch ${BLUE}${DEFAULTBRANCH}${NC}? y/[n] > "
+    read ans
+    if [[ $ans == 'y' ]]; then
+        echo "#### Pushing and returning to default remote and branch ####"
+        git push $DEFAULTREMOTE $STAGINGBRANCH:$DEFAULTBRANCH
+        git checkout $DEFAULTREMOTE/$DEFAULTBRANCH > /dev/null 2>&1
+        git branch -d $STAGINGBRANCH
+        echo -e "${GREEN}"
+        echo -e "pushed\t\t${PROJECTPATH}" | tee -a $MERGEDREPOS
+        echo -en "${NC}"
+    else
+        echo "${PROJECTPATH}" >> $MERGEDREPOS
+    fi
+}
+
 # Verify argument count
 if [ "$#" -ne 2 ]; then
     usage
@@ -154,18 +170,7 @@ for PROJECTPATH in ${PROJECTPATHS}; do
             done
             git add .
             git merge --continue
-            echo -en "Push changes to default branch ${BLUE}${DEFAULTBRANCH}${NC}? y/[n] > "
-            read ans
-            if [[ $ans == 'y' ]]; then
-                echo "#### Pushing and returning to default remote and branch ####"
-                git push $DEFAULTREMOTE $STAGINGBRANCH:$DEFAULTBRANCH
-                git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
-                git branch --delete $STAGINGBRANCH
-                echo
-                echo "pushed-${PROJECTPATH}" >> $MERGEDREPOS
-            else
-                echo "${PROJECTPATH}" >> $MERGEDREPOS
-            fi
+            git_push
         else
             echo -en "${RED}"
             echo -e "conflict\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
@@ -173,18 +178,7 @@ for PROJECTPATH in ${PROJECTPATHS}; do
         fi
     else
         echo -e "${GREEN}Merged ${BLUE}${PROJECTPATH}${GREEN} with no conflicts${NC}"
-        echo -n "Push changes to default branch ${BLUE}${DEFAULTBRANCH}${NC}? y/[n] > "
-        read ans
-        if [[ $ans == 'y' ]]; then
-            echo "#### Pushing and returning to default remote and branch ####"
-            git push $DEFAULTREMOTE $STAGINGBRANCH:$DEFAULTBRANCH
-            git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
-            git branch --delete $STAGINGBRANCH
-            echo
-            echo "pushed-\t\t${PROJECTPATH}" >> $MERGEDREPOS
-        else
-            echo "${PROJECTPATH}" >> $MERGEDREPOS
-        fi
+        git_push
     fi
 
 done
