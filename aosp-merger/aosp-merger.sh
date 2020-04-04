@@ -23,7 +23,7 @@ BLUE="\033[1;36m" # For info
 NC="\033[0m" # reset color
 
 usage() {
-    echo "Usage: ${0} (--delete-staging) <oldaosptag> <newaosptag>"
+    echo "Usage: ${0} (--delete-staging) (--push-staging) <oldaosptag> <newaosptag>"
 }
 
 gco_original() {
@@ -49,7 +49,7 @@ git_push() {
         git push $DEFAULTREMOTE $STAGINGBRANCH:$DEFAULTBRANCH
         git checkout $DEFAULTREMOTE/$DEFAULTBRANCH > /dev/null 2>&1
         git branch -d $STAGINGBRANCH
-        echo -e "${GREEN}"
+        echo -en "${GREEN}"
         echo -e "pushed\t\t${PROJECTPATH}" | tee -a $MERGEDREPOS
         echo -en "${NC}"
     else
@@ -59,6 +59,7 @@ git_push() {
 
 # Handle flags
 isRemoveStaging=0
+isPushStaging=0
 while [[ $# > 2 ]]; do
     case "$1" in
         "--delete-staging") # delete the staging branch
@@ -70,6 +71,10 @@ while [[ $# > 2 ]]; do
             echo -e "${RED}Aborting${NC}"
             exit 0
         fi
+        shift
+        ;;
+        "--push-staging") # push all remaining staging branches to default remote/branch
+        isPushStaging=1
         shift
         ;;
         -*|--*) # unsupported flags
@@ -120,6 +125,25 @@ done
 
 echo -e "Old tag = ${BLUE}${OLDTAG}${NC} Branch = ${BLUE}${DEFAULTBRANCH}${NC} Staging branch = ${BLUE}${STAGINGBRANCH}${NC} Remote = ${BLUE}${DEFAULTREMOTE}${NC}"
 echo
+
+if [[ $isPushStaging == 1 ]]; then
+    echo "#### Pushing all remaining staging branches ####"
+    for PROJECTPATH in ${PROJECTPATHS}; do
+        cd "${TOP}/${PROJECTPATH}"
+
+        # Verifying there are no uncommited changes
+        if [[ -n "$(git status --porcelain)" ]]; then
+            echo -e "${RED}Path ${BLUE}${PROJECTPATH}${RED} has uncommitted changes. Please fix.${NC}"
+            exit 1
+        fi
+
+        LOCALBRANCH=$(git rev-parse --abbrev-ref HEAD)
+        if [[ $LOCALBRANCH == $STAGINGBRANCH ]]; then # if checked out to the staging branch
+            git_push
+        fi
+    done
+    exit 0
+fi
 
 if [[ $isRemoveStaging == 1 ]]; then
     echo -e "#### Removing all staging branches for tag ${BLUE}${NEWTAG}${NC} ####"
