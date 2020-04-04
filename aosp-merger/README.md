@@ -1,33 +1,27 @@
-# Rough workflow
+# aosp-merger
 
-1. Snapshot the names of your current working branches to `branches.list` file:
+### usage
+simply run the script from source top as follows:  
+`./scripts/aosp-merger/aosp-merger.sh (--delete-staging) (--push-staging) <oldaosptag> <newaosptag>`  
 
-       ./lineage/scripts/aosp-merger/branches_save.sh
+* both `<oldaosptag>` and `<newaosptag>` are always required
+* when using flags the script will perform the action(s) and exit
+* set `DEFAULTBRANCH` to the default remote branch name
+* set `DEFAULTREMOTE` to the default remote name
+* set `WAIT_ON_CONFLICT` to `true` or `false` according to preference
+* set `MANIFEST` var to the path of the manifest xml to search
+* add repos *paths* that should not be upstreamed to `merge_blacklist.txt` -
+sperated by newline
 
-2. Note current aosp tag in `.repo/manifests/default.xml`, update it to desired new tag and then create a local commit for the change (aosp-merger script checks for any uncommitted changes in the `.repo/manifests` git repo).
-3. Create a staging branch and merge in the new AOSP tag:
+### description
+the script will go over the manifest file and try to merge the chosen AOSP tag for
+any repo that is being tracked from `DEFAULTREMOTE` and is not in `merge_blacklist.txt`  
+a log of actions will be saved to the source top dir at `merged_repos.txt`  
+previously checked out branches will be saved to the source top dir at `saved_branches.list`
+any non pushed repos will be checked out to a staging branch
 
-       ./lineage/scripts/aosp-merger/aosp-merger.sh merge \<oldaosptag> \<newaosptag>
-   (where oldaosptag is the original AOSP tag that was in `.repo/manifests/default.xml`)
-   * Example invocation:
-
-         ./lineage/scripts/aosp-merger/aosp-merger.sh merge android-8.0.0_r3 android-8.0.0_r30
-
-4. Every project in your tree should now be one of:
-   * \<newaosptag> if the project was tracking AOSP
-   * a staging branch if the project was a LineageOS fork from AOSP (check `merged_repos.txt` for status and whether there are conflicts to resolve)
-   * the default repo lineage branch for `.repo/manifests/snippets.xml` projects
-5. Restore your local branches and merge in the staging branch:
-
-       ./lineage/scripts/aosp-merger/branches_rebase.sh \<nameofstagingbranch>
-   * Example invocation:
-
-         ./lineage/scripts/aosp-merger/branches_rebase.sh staging/lineage-15.0_merge-android-8.0.0_r30
-6. Build, install, boot, verify, etc.
-
-# TODO
-
-* Make it work for rebase (I'm sure it'll need fixups).
-* Create squashed gerrits for each merge.
-* Abandon squashed gerrits and push each merge automatically.
-* DONE. Instead of merging the staging branch into your local branch (if you have one), create a new branch for the local+staging merge.
+### flags
+##### --delete-staging
+will remove the staging branch for the given AOSP tag and exit
+##### --push-staging
+will push (to the set default remote and branch / saved branches in `saved_branches.list`) and remove the remaining staging branches, while promting one by one
