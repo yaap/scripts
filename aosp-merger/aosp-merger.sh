@@ -224,15 +224,19 @@ for PROJECTPATH in ${PROJECTPATHS}; do
         echo -e "${RED}Conflict(s) in ${BLUE}${PROJECTPATH}${NC}"
         if [[ $WAIT_ON_CONFLICT == true ]]; then
             echo -e "${YELLOW}Press 'c' when all merge conflicts are resolved - ${RED}do not commit ${NC}"
+            echo -e "${YELLOW}Press 'l' to keep conflicts for later solving and continue the merge"
             while read -s -r -n 1 lKey; do
                 if [[ $lKey == 'c' ]]; then
+                    git add .
+                    git merge --continue
+                    git_push
+                    break;
+                elif [[ $lKey == 'l' ]]; then
                     break;
                 fi
             done
-            git add .
-            git merge --continue
-            git_push
-        else
+        fi
+        if [[ $WAIT_ON_CONFLICT != true ]] || [[ $lKey == 'l' ]]; then
             echo -en "${RED}"
             echo -e "conflict\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
             echo -en "${NC}"
