@@ -198,6 +198,15 @@ for PROJECTPATH in ${PROJECTPATHS}; do
     aospremote
     git fetch -q --tags aosp "${NEWTAG}"
 
+    # Was there any change upstream? Return to default branch and skip if not.
+    if [[ -z "$(git diff ${OLDTAG} ${NEWTAG})" ]]; then
+        echo -en "${GREEN}"
+        echo -e "nochange\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
+        echo -e "${NC}"
+        gco_original
+        continue
+    fi
+
     # Check if we've actually changed anything before attempting to merge
     # If we haven't, just "git reset --hard" to the tag
     if [[ -z "$(git diff HEAD ${OLDTAG})" ]]; then
@@ -205,15 +214,6 @@ for PROJECTPATH in ${PROJECTPATHS}; do
         echo -en "${GREEN}"
         echo -e "reset\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
         echo -en "${NC}"
-        continue
-    fi
-
-    # Was there any change upstream? Return to default branch and skip if not.
-    if [[ -z "$(git diff ${OLDTAG} ${NEWTAG})" ]]; then
-        echo -en "${GREEN}"
-        echo -e "nochange\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
-        echo -e "${NC}"
-        gco_original
         continue
     fi
 
