@@ -34,7 +34,8 @@ gco_original() {
         echo -e "Returning to ${BLUE}${line}${NC} on ${BLUE}${PROJECTPATH}${NC}"
         git checkout $line > /dev/null 2>&1
     else
-        echo -e "${YELLOW}Default branch for ${BLUE}${PROJECTPATH}${YELLOW} not found. Checking out to ${BLUE}${DEFAULTREMOTE0}/${DEFAULTBRANCH}${NC}"
+        echo -en "${YELLOW}Default branch for ${BLUE}${PROJECTPATH}${YELLOW} not found. "
+        echo -e "Checking out to ${BLUE}${DEFAULTREMOTE0}/${DEFAULTBRANCH}${NC}"
         git checkout $DEFAULTREMOTE/$DEFAULTBRANCH > /dev/null 2>&1
     fi
     git branch -d $STAGINGBRANCH
@@ -124,7 +125,8 @@ for PROJECTPATH in ${PROJECTPATHS}; do
     fi
 done
 
-echo -e "Old tag = ${BLUE}${OLDTAG}${NC} Branch = ${BLUE}${DEFAULTBRANCH}${NC} Staging branch = ${BLUE}${STAGINGBRANCH}${NC} Remote = ${BLUE}${DEFAULTREMOTE}${NC}"
+echo -en "Old tag = ${BLUE}${OLDTAG}${NC} Branch = ${BLUE}${DEFAULTBRANCH}${NC} "
+echo -e "Staging branch = ${BLUE}${STAGINGBRANCH}${NC} Remote = ${BLUE}${DEFAULTREMOTE}${NC}"
 echo
 
 if [[ $isPushStaging == 1 ]]; then
