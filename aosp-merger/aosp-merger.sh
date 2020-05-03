@@ -42,7 +42,8 @@ gco_original() {
 }
 
 git_push() {
-    echo -en "Push changes to default branch ${BLUE}${DEFAULTBRANCH}${NC}? y/[n] > "
+    echo -en "Push changes to default branch ${BLUE}${DEFAULTBRANCH}${NC} "
+    echo -en "in ${BLUE}${PROJECTPATH}${NC}? y/[n] > "
     read ans
     if [[ $ans == 'y' ]]; then
         echo "#### Pushing and returning to default remote and branch ####"
