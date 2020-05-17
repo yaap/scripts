@@ -27,7 +27,7 @@ if [[ $ans == 'y' ]]; then
   scp "${ZIP_PATH}.md5sum" "${userName}@frs.sourceforge.net":"/home/frs/p/derpfest/${DEVICE}"
 fi
 
-# Clonning / Fetchig Updater-Stuff repo if needed be
+# Cloning / Fetching Updater-Stuff repo if needed be
 if [[ -d $REPO ]]; then
   cd $REPO
   git fetch --all
@@ -47,7 +47,7 @@ else
   cd $DEVICE
 fi
 
-# Copying generated Changelog and .json file and committig changes
+# Copying generated Changelog and .json file and committing changes
 cp "${OUT}/${DEVICE}.json" ./
 cp "${OUT}/Changelog.txt" ./
 cd ..
