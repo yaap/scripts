@@ -56,7 +56,7 @@ git commit -m "${DEVICE}: ${DATE} update"
 
 # Pushing changes
 echo
-git diff HEAD^
+git --no-pager diff HEAD^
 echo
 echo "Make sure changes are correct!"
 echo "Only push after build and md5 checksum are properly uploaded"
