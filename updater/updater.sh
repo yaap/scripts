@@ -16,15 +16,23 @@ ZIP=$(basename $ZIP_PATH)
 DATE=$(echo $ZIP | sed -n -e "s/^.*${DEVICE}-//p")
 DATE="${DATE:0:4}-${DATE:4:2}-${DATE:6:2}"
 # Upload build to SourceForge
-echo -n "Upload ${ZIP} to SourceForge ? y/[n] > "
+echo -n "Upload ${ZIP}? y/[n] > "
 read ans
 if [[ $ans == 'y' ]]; then
-  echo -n "Enter SourceForge username: "
-  read userName
   echo "Uploading build"
-  scp $ZIP_PATH "${userName}@frs.sourceforge.net":"/home/frs/p/derpfest/${DEVICE}"
+  scp -o StrictHostKeyChecking=no $ZIP_PATH "${DEVICE}@upload.derpfest.org":"/home/${DEVICE}/"
   echo "Uploading md5sum"
-  scp "${ZIP_PATH}.md5sum" "${userName}@frs.sourceforge.net":"/home/frs/p/derpfest/${DEVICE}"
+  scp -o StrictHostKeyChecking=no "${ZIP_PATH}.md5sum" "${DEVICE}@upload.derpfest.org":"/home/${DEVICE}/"
+  echo -n "Mirror ${ZIP} to SourceForge? y/[n] > "
+  read ans
+  if [[ $ans == 'y' ]]; then
+    echo -n "Enter SourceForge username: "
+    read userName
+    echo "Uploading build"
+    scp $ZIP_PATH "${userName}@frs.sourceforge.net":"/home/frs/p/derpfest/${DEVICE}"
+    echo "Uploading md5sum"
+    scp "${ZIP_PATH}.md5sum" "${userName}@frs.sourceforge.net":"/home/frs/p/derpfest/${DEVICE}"
+  fi
 fi
 
 # Cloning / Fetching Updater-Stuff repo if needed be
