@@ -48,11 +48,32 @@ fi
 # Making sure device folder exists and is empty
 if [[ -d $DEVICE ]]; then
   cd $DEVICE
-  rm ./*
+  rm -f "${DEVICE}.json"
+  rm -f Changelog.txt
+  rm -f changelog.txt
 else
   echo "New device: ${DEVICE} - creating folder"
   mkdir $DEVICE
   cd $DEVICE
+fi
+
+# Making sure info.sh is there. If not - generate
+if ! [[ -f info.sh ]]; then
+  echo
+  echo "Did not find info.sh - prompting for info"
+  echo
+  echo -n "Enter device name (not codename) > "
+  read ans
+  echo "DEVICE_NAME=\"${ans}\"" > info.sh
+  echo -n "Enter telegram tag (without @) > "
+  read ans
+  echo "TGNAME=\"${ans}\"" >> info.sh
+  echo -n "Enter name of maintainer > "
+  read ans
+  echo "MAINTAINER=\"${ans}\"" >> info.sh
+  echo -n "Enter link to discussion (xda / tg group) > "
+  read ans
+  echo "DISCUSSION=\"${ans}\"" >> info.sh
 fi
 
 # Copying generated Changelog and .json file and committing changes
