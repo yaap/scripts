@@ -11,7 +11,7 @@ REPO="Updater-Stuff" # Name of the update repo
 REMOTE="https://github.com/DerpLab" # URL to the remote git
 BRANCH="master" # Default branch name
 DEVICE=$(basename $OUT) # Device name
-ZIP_PATH=$(find $OUT -maxdepth 1 -type f -name "Derp*.zip" | sed -n -e "1{p;q}")
+ZIP_PATH=$(find $OUT -maxdepth 1 -type f -name "Derp*${DEVICE}*.zip" | sed -n -e "1{p;q}")
 ZIP=$(basename $ZIP_PATH)
 DATE=$(echo $ZIP | sed -n -e "s/^.*${DEVICE}-//p")
 DATE="${DATE:0:4}-${DATE:4:2}-${DATE:6:2}"
@@ -55,6 +55,20 @@ if ! [[ -f info.sh ]]; then
   echo -n "Enter link to discussion (xda / tg group) > "
   read ans
   echo "DISCUSSION=\"${ans}\"" >> info.sh
+  # Comitting and pushing info.sh
+  git add info.sh
+  git commit -m "${DEVICE}: Add info.sh"
+  git --no-pager diff HEAD^
+  echo
+  echo "Make sure changes are correct!"
+  echo -n "Push changes (already committed)? y/[n] > "
+  read ans
+  if [[ $ans == 'y' ]]; then
+    git push origin HEAD:$BRANCH
+  else
+    echo "Warning!! Update will not be posted to channel with no info.sh!"
+    echo "It will have to be reuploaded"
+  fi
 fi
 
 # Upload build
