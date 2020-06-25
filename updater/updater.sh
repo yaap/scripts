@@ -15,25 +15,6 @@ ZIP_PATH=$(find $OUT -maxdepth 1 -type f -name "Derp*.zip" | sed -n -e "1{p;q}")
 ZIP=$(basename $ZIP_PATH)
 DATE=$(echo $ZIP | sed -n -e "s/^.*${DEVICE}-//p")
 DATE="${DATE:0:4}-${DATE:4:2}-${DATE:6:2}"
-# Upload build to SourceForge
-echo -n "Upload ${ZIP}? y/[n] > "
-read ans
-if [[ $ans == 'y' ]]; then
-  echo "Uploading build"
-  scp -o StrictHostKeyChecking=no $ZIP_PATH "${DEVICE}@upload.derpfest.org":"/home/${DEVICE}/"
-  echo "Uploading md5sum"
-  scp -o StrictHostKeyChecking=no "${ZIP_PATH}.md5sum" "${DEVICE}@upload.derpfest.org":"/home/${DEVICE}/"
-  echo -n "Mirror ${ZIP} to SourceForge? y/[n] > "
-  read ans
-  if [[ $ans == 'y' ]]; then
-    echo -n "Enter SourceForge username: "
-    read userName
-    echo "Uploading build"
-    scp $ZIP_PATH "${userName}@frs.sourceforge.net":"/home/frs/p/derpfest/${DEVICE}"
-    echo "Uploading md5sum"
-    scp "${ZIP_PATH}.md5sum" "${userName}@frs.sourceforge.net":"/home/frs/p/derpfest/${DEVICE}"
-  fi
-fi
 
 # Cloning / Fetching Updater-Stuff repo if needed be
 if [[ -d $REPO ]]; then
@@ -74,6 +55,26 @@ if ! [[ -f info.sh ]]; then
   echo -n "Enter link to discussion (xda / tg group) > "
   read ans
   echo "DISCUSSION=\"${ans}\"" >> info.sh
+fi
+
+# Upload build
+echo -n "Upload ${ZIP}? y/[n] > "
+read ans
+if [[ $ans == 'y' ]]; then
+  echo "Uploading build"
+  scp -o StrictHostKeyChecking=no $ZIP_PATH "${DEVICE}@upload.derpfest.org":"/home/${DEVICE}/"
+  echo "Uploading md5sum"
+  scp -o StrictHostKeyChecking=no "${ZIP_PATH}.md5sum" "${DEVICE}@upload.derpfest.org":"/home/${DEVICE}/"
+  echo -n "Mirror ${ZIP} to SourceForge? y/[n] > "
+  read ans
+  if [[ $ans == 'y' ]]; then
+    echo -n "Enter SourceForge username: "
+    read userName
+    echo "Uploading build"
+    scp $ZIP_PATH "${userName}@frs.sourceforge.net":"/home/frs/p/derpfest/${DEVICE}"
+    echo "Uploading md5sum"
+    scp "${ZIP_PATH}.md5sum" "${userName}@frs.sourceforge.net":"/home/frs/p/derpfest/${DEVICE}"
+  fi
 fi
 
 # Copying generated Changelog and .json file and committing changes
