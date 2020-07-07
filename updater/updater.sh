@@ -19,7 +19,7 @@ DATE="${DATE:0:4}-${DATE:4:2}-${DATE:6:2}"
 # Cloning / Fetching Updater-Stuff repo if needed be
 if [[ -d $REPO ]]; then
   cd $REPO
-  git fetch --all
+  git remote update origin
   git checkout origin/$BRANCH
 else
   git clone $REMOTE/$REPO
