@@ -72,6 +72,7 @@ if ! [[ -f info.sh ]]; then
 fi
 
 # Upload build
+useSF='n'
 echo -n "Upload ${ZIP}? y/[n] > "
 read ans
 if [[ $ans == 'y' ]]; then
@@ -88,12 +89,35 @@ if [[ $ans == 'y' ]]; then
     scp $ZIP_PATH "${userName}@frs.sourceforge.net":"/home/frs/p/derpfest/${DEVICE}"
     echo "Uploading md5sum"
     scp "${ZIP_PATH}.md5sum" "${userName}@frs.sourceforge.net":"/home/frs/p/derpfest/${DEVICE}"
+    echo -n "Use SourceForge for OpenDelta (OTA)? y/[n] > "
+    read useSF
   fi
 fi
 
 # Copying generated Changelog and .json file and committing changes
 cp "${OUT}/${DEVICE}.json" ./
 cp "${OUT}/Changelog.txt" ./
+isCustomLink=0
+if [[ $useSF == 'y' ]]; then
+  isCustomLink=1
+  customLink="https://sourceforge.net/projects/derpfest/files/${DEVICE}/${ZIP}/download"
+  customMD5="https://sourceforge.net/projects/derpfest/files/${DEVICE}/${ZIP}.md5sum/download"
+else
+  echo -n "Use a custom url for OpenDelta (OTA)? y/[n] > "
+  read ans
+  if [[ $ans == 'y' ]]; then
+    isCustomLink=1
+    echo -n "Enter a direct zip download link > "
+    read customLink
+    echo -n "Enter a direct md5sum download link > "
+    read customMD5
+  fi
+fi
+if [[ $isCustomLink == 1 ]]; then
+  sed -ie 5's/$/,&/' "${DEVICE}.json"
+  sed -i "6i\ \ \ \ \ \"url\": \"${customLink}\"," "${DEVICE}.json"
+  sed -i "7i\ \ \ \ \ \"md5url\": \"${customMD5}\"" "${DEVICE}.json"
+fi
 cd ..
 git add .
 git commit -m "${DEVICE}: ${DATE} update"
