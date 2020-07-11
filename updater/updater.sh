@@ -80,25 +80,16 @@ if [[ $ans == 'y' ]]; then
   scp -o StrictHostKeyChecking=no $ZIP_PATH "${DEVICE}@upload.derpfest.org":"/home/${DEVICE}/"
   echo "Uploading md5sum"
   scp -o StrictHostKeyChecking=no "${ZIP_PATH}.md5sum" "${DEVICE}@upload.derpfest.org":"/home/${DEVICE}/"
-  echo -n "Mirror ${ZIP} to SourceForge? y/[n] > "
-  read ans
-  if [[ $ans == 'y' ]]; then
-    echo -n "Enter SourceForge username: "
-    read userName
-    echo "Uploading build"
-    scp $ZIP_PATH "${userName}@frs.sourceforge.net":"/home/frs/p/derpfest/${DEVICE}"
-    echo "Uploading md5sum"
-    scp "${ZIP_PATH}.md5sum" "${userName}@frs.sourceforge.net":"/home/frs/p/derpfest/${DEVICE}"
-    echo -n "Use SourceForge for OpenDelta (OTA)? y/[n] > "
-    read useSF
-  fi
+  echo "Build will be automatically mirrored to SourceForge"
 fi
 
 # Copying generated Changelog and .json file and committing changes
 cp "${OUT}/${DEVICE}.json" ./
 cp "${OUT}/Changelog.txt" ./
 isCustomLink=0
-if [[ $useSF == 'y' ]]; then
+echo -n "Use SourceForge for OpenDelta (OTA)? y/[n] > "
+read ans
+if [[ $ans == 'y' ]]; then
   isCustomLink=1
   customLink="https://sourceforge.net/projects/derpfest/files/${DEVICE}/${ZIP}/download"
   customMD5="https://sourceforge.net/projects/derpfest/files/${DEVICE}/${ZIP}.md5sum/download"
