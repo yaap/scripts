@@ -1,12 +1,20 @@
 #!/bin/bash
 
+# Colors
+RED="\033[1;31m" # For errors / warnings
+GREEN="\033[1;32m" # For info
+YELLOW="\033[1;33m" # For input requests
+BLUE="\033[1;36m" # For info
+NC="\033[0m" # reset color
+
 # Making sure $OUT is populated
 if [[ $OUT == '' ]]; then
-  echo "Please lunch the target device."
-  echo "Also make sure a build exists in out folder"
+  echo -e "${RED}Please lunch the target device.${NC}"
+  echo -e "${RED}Also make sure a build exists in out folder${NC}"
   exit 1
 fi
 
+# Global vars
 REPO="Updater-Stuff" # Name of the update repo
 REMOTE="https://github.com/DerpLab" # URL to the remote git
 BRANCH="master" # Default branch name
@@ -15,6 +23,10 @@ ZIP_PATH=$(find $OUT -maxdepth 1 -type f -name "Derp*${DEVICE}*.zip" | sed -n -e
 ZIP=$(basename $ZIP_PATH)
 DATE=$(echo $ZIP | sed -n -e "s/^.*${DEVICE}-//p")
 DATE="${DATE:0:4}-${DATE:4:2}-${DATE:6:2}"
+
+echo
+echo -e "${RED}WARNING! If you have vanilla in a seperate folder - work manually to upload that version!${NC}"
+echo
 
 # Cloning / Fetching Updater-Stuff repo if needed be
 if [[ -d $REPO ]]; then
@@ -33,7 +45,7 @@ if [[ -d $DEVICE ]]; then
   rm -f Changelog.txt
   rm -f changelog.txt
 else
-  echo "New device: ${DEVICE} - creating folder"
+  echo -e "${GREEN}New device: ${BLUE}${DEVICE}${GREEN} - creating folder${NC}"
   mkdir $DEVICE
   cd $DEVICE
 fi
@@ -41,18 +53,18 @@ fi
 # Making sure info.sh is there. If not - generate
 if ! [[ -f info.sh ]]; then
   echo
-  echo "Did not find info.sh - prompting for info"
+  echo -e "${RED}Did not find info.sh - prompting for info${NC}"
   echo
-  echo -n "Enter device name (not codename) > "
+  echo -en "${YELLOW}Enter device name (not codename) > ${NC}"
   read ans
   echo "DEVICE_NAME=\"${ans}\"" > info.sh
-  echo -n "Enter telegram tag (without @) > "
+  echo -en "${YELLOW}Enter telegram tag (without @) > ${NC}"
   read ans
   echo "TGNAME=\"${ans}\"" >> info.sh
-  echo -n "Enter name of maintainer > "
+  echo -en "${YELLOW}Enter name of maintainer > ${NC}"
   read ans
   echo "MAINTAINER=\"${ans}\"" >> info.sh
-  echo -n "Enter link to discussion (xda / tg group) > "
+  echo -en "${YELLOW}Enter link to discussion (xda / tg group) > ${NC}"
   read ans
   echo "DISCUSSION=\"${ans}\"" >> info.sh
   # Comitting and pushing info.sh
@@ -60,26 +72,27 @@ if ! [[ -f info.sh ]]; then
   git commit -m "${DEVICE}: Add info.sh"
   git --no-pager diff HEAD^
   echo
-  echo "Make sure changes are correct!"
-  echo -n "Push changes (already committed)? y/[n] > "
+  echo -e "${RED}Make sure changes are correct!${NC}"
+  echo -en "${YELLOW}Push changes (already committed)? y/[n] > ${NC}"
   read ans
   if [[ $ans == 'y' ]]; then
     git push origin HEAD:$BRANCH
   else
-    echo "Warning!! Update will not be posted to channel with no info.sh!"
-    echo "It will have to be reuploaded"
+    echo -e "${RED}Warning!! Update will not be posted to channel with no info.sh!${NC}"
+    echo -e "${RED}It will have to be reuploaded${NC}"
   fi
 fi
 
 # Upload build
 useSF='n'
-echo -n "Upload ${ZIP}? y/[n] > "
+echo -en "${YELLOW}Upload ${BLUE}${ZIP}${YELLOW}? y/[n] > ${NC}"
 read ans
 if [[ $ans == 'y' ]]; then
-  echo "Uploading build"
+  echo -e "${GREEN}Uploading build${NC}"
   scp -o StrictHostKeyChecking=no $ZIP_PATH "${DEVICE}@upload.derpfest.org":"/home/${DEVICE}/"
-  echo "Uploading md5sum"
+  echo -e "${GREEN}Uploading md5sum${NC}"
   scp -o StrictHostKeyChecking=no "${ZIP_PATH}.md5sum" "${DEVICE}@upload.derpfest.org":"/home/${DEVICE}/"
+  echo
   echo "Build will be automatically mirrored to SourceForge"
 fi
 
@@ -87,20 +100,20 @@ fi
 cp "${OUT}/${DEVICE}.json" ./
 cp "${OUT}/Changelog.txt" ./
 isCustomLink=0
-echo -n "Use SourceForge for OpenDelta (OTA)? y/[n] > "
+echo -en "${YELLOW}Use SourceForge for OpenDelta (OTA)? y/[n] > ${NC}"
 read ans
 if [[ $ans == 'y' ]]; then
   isCustomLink=1
   customLink="https://sourceforge.net/projects/derpfest/files/${DEVICE}/${ZIP}/download"
   customMD5="https://sourceforge.net/projects/derpfest/files/${DEVICE}/${ZIP}.md5sum/download"
 else
-  echo -n "Use a custom url for OpenDelta (OTA)? y/[n] > "
+  echo -en "${YELLOW}Use a custom url for OpenDelta (OTA)? y/[n] > ${NC}"
   read ans
   if [[ $ans == 'y' ]]; then
     isCustomLink=1
-    echo -n "Enter a direct zip download link > "
+    echo -en "${YELLOW}Enter a direct zip download link > ${NC}"
     read customLink
-    echo -n "Enter a direct md5sum download link > "
+    echo -en "${YELLOW}Enter a direct md5sum download link > ${NC}"
     read customMD5
   fi
 fi
@@ -117,9 +130,9 @@ git commit -m "${DEVICE}: ${DATE} update"
 echo
 git --no-pager diff HEAD^
 echo
-echo "Make sure changes are correct!"
-echo "Only push after build and md5 checksum are properly uploaded"
-echo -n "Push changes (already committed)? y/[n] > "
+echo -e "${RED}Make sure changes are correct!${NC}"
+echo -e "${RED}Only push after build and md5 checksum are properly uploaded${NC}"
+echo -en "${YELLOW}Push changes (already committed)? y/[n] > ${NC}"
 read ans
 if [[ $ans == 'y' ]]; then
   git push origin HEAD:$BRANCH
