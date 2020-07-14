@@ -33,6 +33,10 @@ if [[ -d $REPO ]]; then
   cd $REPO
   git remote update origin
   git checkout origin/$BRANCH
+  # also make sure no pending changes
+  git restore --staged .
+  git restore .
+  git clean -f
 else
   git clone $REMOTE/$REPO
   cd $REPO
