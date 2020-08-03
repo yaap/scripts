@@ -214,6 +214,15 @@ for PROJECTPATH in ${PROJECTPATHS}; do
     aospremote
     git fetch -q --tags aosp "${NEWTAG}"
 
+    # Making sure aosp remote is valid
+    if [[ $? != 0 ]]; then
+        echo -en "${RED}"
+        echo -e "invalid\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
+        echo -e "${NC}"
+        gco_original
+        continue
+    fi
+
     # Was there any change upstream? Return to default branch and skip if not.
     if [[ -z "$(git diff ${OLDTAG} ${NEWTAG})" ]]; then
         echo -en "${GREEN}"
