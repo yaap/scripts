@@ -23,3 +23,5 @@ system/apex
 system/keymaster
 system/netd
 system/qcom
+manifest
+build/make
