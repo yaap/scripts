@@ -203,12 +203,13 @@ git fetch https://android.googlesource.com/platform/build $NEWTAG
 git merge FETCH_HEAD
 echo -e "${GREEN}#### build/make & manifest merged. ${RED}Please push manually at the end${GREEN} ####${NC}"
 
-# Sync and detach from current branches
-repo sync -d
+# Sync
+repo sync
 
 # Iterate over each forked project
 for PROJECTPATH in ${PROJECTPATHS}; do
     cd "${TOP}/${PROJECTPATH}"
+    git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
     repo start "${STAGINGBRANCH}" .
     aospremote
     git fetch -q --tags aosp "${NEWTAG}"
