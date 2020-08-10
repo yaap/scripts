@@ -96,16 +96,16 @@ if [[ $ans == 'y' ]]; then
   scp -o StrictHostKeyChecking=no $ZIP_PATH "${DEVICE}@upload.derpfest.org":"/home/${DEVICE}/"
   echo -e "${GREEN}Uploading md5sum${NC}"
   scp -o StrictHostKeyChecking=no "${ZIP_PATH}.md5sum" "${DEVICE}@upload.derpfest.org":"/home/${DEVICE}/"
-  echo -n "${YELLOW}Mirror ${BLUE}${ZIP}${YELLOW} to SourceForge? y/[n] > ${NC}"
+  echo -en "${YELLOW}Mirror ${BLUE}${ZIP}${YELLOW} to SourceForge? y/[n] > ${NC}"
   read ans
   if [[ $ans == 'y' ]]; then
-    echo -ne "${YELLOW}Enter SourceForge username: ${NC}"
+    echo -en "${YELLOW}Enter SourceForge username: ${NC}"
     read userName
     echo -e "${GREEN}Uploading build${NC}"
     scp $ZIP_PATH "${userName}@frs.sourceforge.net":"/home/frs/p/derpfest/${DEVICE}"
     echo "Uploading md5sum"
     scp "${ZIP_PATH}.md5sum" "${userName}@frs.sourceforge.net":"/home/frs/p/derpfest/${DEVICE}"
-    echo -n "${YELLOW}Use SourceForge for OpenDelta (OTA)? y/[n] > ${NC}"
+    echo -en "${YELLOW}Use SourceForge for OpenDelta (OTA)? y/[n] > ${NC}"
     read useSF
   fi
 fi
