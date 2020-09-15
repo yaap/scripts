@@ -42,12 +42,9 @@ else
   cd $REPO
 fi
 
-# Making sure device folder exists and is empty
+# Making sure device folder exists
 if [[ -d $DEVICE ]]; then
   cd $DEVICE
-  rm -f "${DEVICE}.json"
-  rm -f Changelog.txt
-  rm -f changelog.txt
 else
   echo -e "${GREEN}New device: ${BLUE}${DEVICE}${GREEN} - creating folder${NC}"
   mkdir $DEVICE
@@ -110,7 +107,13 @@ if [[ $ans == 'y' ]]; then
   fi
 fi
 
+# Making sure Updater-Stuff repo is still upstreamed after the upload
+git remote update origin
+git checkout origin/$BRANCH
 # Copying generated Changelog and .json file and committing changes
+rm -f "${DEVICE}.json"
+rm -f Changelog.txt
+rm -f changelog.txt
 cp "${OUT}/${DEVICE}.json" ./
 cp "${OUT}/Changelog.txt" ./
 isCustomLink=0
