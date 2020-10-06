@@ -59,6 +59,23 @@ git_push() {
     fi
 }
 
+# Verifies there are no uncommitted changes on the current path
+verify_committed() {
+    if [[ -n "$(git status --porcelain)" ]]; then
+        echo -e "${RED}Path ${BLUE}${PROJECTPATH}${RED} has uncommitted changes.${NC}"
+        git --no-pager diff
+        git --no-pager diff --staged
+        echo -en "${YELLOW}Clear uncommitted changes (see above) y/[n] > ${NC}"
+        read ans
+        if [[ $ans == 'y' ]]; then
+            git restore .
+            git clean -f .
+        else
+            exit 1
+        fi
+    fi
+}
+
 # Handle flags
 isRemoveStaging=0
 isPushStaging=0
@@ -134,14 +151,9 @@ if [[ $isPushStaging == 1 ]]; then
     for PROJECTPATH in ${PROJECTPATHS}; do
         cd "${TOP}/${PROJECTPATH}"
 
-        # Verifying there are no uncommited changes
-        if [[ -n "$(git status --porcelain)" ]]; then
-            echo -e "${RED}Path ${BLUE}${PROJECTPATH}${RED} has uncommitted changes. Please fix.${NC}"
-            exit 1
-        fi
-
         LOCALBRANCH=$(git rev-parse --abbrev-ref HEAD)
         if [[ $LOCALBRANCH == $STAGINGBRANCH ]]; then # if checked out to the staging branch
+            verify_committed
             git_push
         fi
     done
@@ -173,10 +185,7 @@ rm -f "${MERGEDREPOS}"
 echo "#### Verifying there are no uncommitted changes on forked AOSP projects and saving local branches ####"
 for PROJECTPATH in ${PROJECTPATHS} .repo/manifests; do
     cd "${TOP}/${PROJECTPATH}"
-    if [[ -n "$(git status --porcelain)" ]]; then
-        echo -e "${RED}Path ${BLUE}${PROJECTPATH}${RED} has uncommitted changes. Please fix.${NC}"
-        exit 1
-    fi
+    verify_committed
 
     # save the current branch
     LOCALBRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -211,6 +220,7 @@ for PROJECTPATH in ${PROJECTPATHS}; do
     cd "${TOP}/${PROJECTPATH}"
     git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
     repo start "${STAGINGBRANCH}" .
+    git branch --set-upstream-to=$DEFAULTREMOTE/$DEFAULTBRANCH
     aospremote
     git fetch -q --tags aosp "${NEWTAG}"
 
