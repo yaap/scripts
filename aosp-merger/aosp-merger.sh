@@ -211,9 +211,11 @@ git checkout -b "${STAGINGBRANCH}"
 git fetch https://android.googlesource.com/platform/build $NEWTAG
 git merge FETCH_HEAD
 echo -e "${GREEN}#### build/make & manifest merged. ${RED}Please push manually at the end${GREEN} ####${NC}"
+echo -en "${YELLOW}Press any key after resolving and committing build/make & manifest${NC}"
+read -n 1 -s -r
 
 # Sync
-repo sync
+repo sync -j$(nproc)
 
 # Iterate over each forked project
 for PROJECTPATH in ${PROJECTPATHS}; do
