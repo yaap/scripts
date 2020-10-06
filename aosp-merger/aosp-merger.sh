@@ -137,7 +137,7 @@ PROJECTPATHS=$(grep "remote=\"$DEFAULTREMOTE\"" "${MANIFEST}" | sed -n 's/.*path
 
 # Remove blacklisted (non-aosp / not to merge) repos
 for PROJECTPATH in ${PROJECTPATHS}; do
-    if grep -q $PROJECTPATH $TOP/scripts/aosp-merger/merge_blacklist.txt; then
+    if grep -q -x $PROJECTPATH $TOP/scripts/aosp-merger/merge_blacklist.txt; then
         PROJECTPATHS=("${PROJECTPATHS[@]/$PROJECTPATH}")
     fi
 done
