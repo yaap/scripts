@@ -204,10 +204,12 @@ echo -e "${GREEN}#### Verification complete - no uncommitted changes found ####$
 echo "#### Merging build/make & manifest ####"
 cd .repo/manifest
 git checkout -b "${STAGINGBRANCH}"
+git branch --set-upstream-to=origin/$DEFAULTBRANCH
 git fetch https://android.googlesource.com/platform/manifest $NEWTAG
 git merge FETCH_HEAD
 cd ../../build/make
 git checkout -b "${STAGINGBRANCH}"
+git branch --set-upstream-to=$DEFAULTREMOTE/$DEFAULTBRANCH
 git fetch https://android.googlesource.com/platform/build $NEWTAG
 git merge FETCH_HEAD
 echo -e "${GREEN}#### build/make & manifest merged. ${RED}Please push manually at the end${GREEN} ####${NC}"
