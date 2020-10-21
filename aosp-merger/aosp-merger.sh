@@ -233,6 +233,12 @@ for PROJECTPATH in ${PROJECTPATHS}; do
         echo -en "${RED}"
         echo -e "invalid\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
         echo -e "${NC}"
+        echo -en "${YELLOW}Add to blacklist? [y]/n > "
+        read ans
+        if [[ $ans != 'n' ]]; then
+            echo $PROJECTPATH >> $TOP/scripts/aosp-merger/merge_blacklist.txt
+            echo -e "Added ${BLUE}${PROJECTPATH}${NC} to balcklist"
+        fi
         gco_original
         continue
     fi
@@ -263,7 +269,7 @@ for PROJECTPATH in ${PROJECTPATHS}; do
         echo -e "${RED}Conflict(s) in ${BLUE}${PROJECTPATH}${NC}"
         if [[ $WAIT_ON_CONFLICT == true ]]; then
             echo -e "${YELLOW}Press 'c' when all merge conflicts are resolved - ${RED}do not commit ${NC}"
-            echo -e "${YELLOW}Press 'l' to keep conflicts for later solving and continue the merge"
+            echo -e "${YELLOW}Press 'l' to keep conflicts for later solving and continue the merge${NC}"
             while read -s -r -n 1 lKey; do
                 if [[ $lKey == 'c' ]]; then
                     git add .
