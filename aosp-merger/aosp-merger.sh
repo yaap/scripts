@@ -253,16 +253,6 @@ for PROJECTPATH in ${PROJECTPATHS}; do
         continue
     fi
 
-    # Check if we've actually changed anything before attempting to merge
-    # If we haven't, just "git reset --hard" to the tag
-    if [[ -z "$(git diff HEAD ${OLDTAG})" ]]; then
-        git reset --hard "${NEWTAG}"
-        echo -en "${GREEN}"
-        echo -e "reset\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
-        echo -en "${NC}"
-        continue
-    fi
-
     echo -e "#### Merging ${BLUE}${NEWTAG}${NC} into ${BLUE}${PROJECTPATH}${NC} ####"
     git merge --no-edit --log "${NEWTAG}"
 
