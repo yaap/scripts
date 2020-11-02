@@ -38,7 +38,7 @@ gco_original() {
         echo -e "Checking out to ${BLUE}${DEFAULTREMOTE0}/${DEFAULTBRANCH}${NC}"
         git checkout $DEFAULTREMOTE/$DEFAULTBRANCH > /dev/null 2>&1
     fi
-    git branch -d $STAGINGBRANCH
+    git branch -D $STAGINGBRANCH
     echo -e "Removed ${BLUE}${STAGINGBRANCH}${NC}"
 }
 
@@ -199,10 +199,11 @@ for PROJECTPATH in ${PROJECTPATHS} .repo/manifests; do
     git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
 done
 echo -e "${GREEN}#### Verification complete - no uncommitted changes found ####${NC}"
+cd $TOP
 
 # Merging build/make & manifest
 echo "#### Merging build/make & manifest ####"
-cd .repo/manifest
+cd .repo/manifests
 git checkout -b "${STAGINGBRANCH}"
 git branch --set-upstream-to=origin/$DEFAULTBRANCH
 git fetch https://android.googlesource.com/platform/manifest $NEWTAG
