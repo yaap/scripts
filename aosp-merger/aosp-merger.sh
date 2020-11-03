@@ -54,8 +54,6 @@ git_push() {
         echo -en "${GREEN}"
         echo -e "pushed\t\t${PROJECTPATH}" | tee -a $MERGEDREPOS
         echo -en "${NC}"
-    else
-        echo "${PROJECTPATH}" >> $MERGEDREPOS
     fi
 }
 
@@ -265,6 +263,9 @@ for PROJECTPATH in ${PROJECTPATHS}; do
                 if [[ $lKey == 'c' ]]; then
                     git add .
                     git merge --continue
+                    echo -en "${GREEN}"
+                    echo -e "solved\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
+                    echo -e "${NC}"
                     git_push
                     break;
                 elif [[ $lKey == 'l' ]]; then
@@ -279,6 +280,7 @@ for PROJECTPATH in ${PROJECTPATHS}; do
         fi
     else
         echo -e "${GREEN}Merged ${BLUE}${PROJECTPATH}${GREEN} with no conflicts${NC}"
+        echo -e "clean\t\t${PROJECTPATH}" >> "${MERGEDREPOS}"
         git_push
     fi
 
