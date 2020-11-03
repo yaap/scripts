@@ -1,7 +1,7 @@
 # aosp-merger
 
-### usage
-simply run the script from source top as follows:  
+### Usage
+Simply run the script from source top as follows:  
 `./scripts/aosp-merger/aosp-merger.sh (--delete-staging) (--push-staging) <oldaosptag> <newaosptag>`  
 
 * both `<oldaosptag>` and `<newaosptag>` are always required
@@ -13,15 +13,26 @@ simply run the script from source top as follows:
 * add repos *paths* that should not be upstreamed to `merge_blacklist.txt` -
 sperated by newline
 
-### description
-the script will go over the manifest file and try to merge the chosen AOSP tag for
+### Description
+The script will go over the manifest file and try to merge the chosen AOSP tag for
 any repo that is being tracked from `DEFAULTREMOTE` and is not in `merge_blacklist.txt`  
-a log of actions will be saved to the source top dir at `merged_repos.txt`  
-previously checked out branches will be saved to the source top dir at `saved_branches.list`
-any non pushed repos will be checked out to a staging branch
+A log of actions will be saved to the source top dir at `merged_repos.txt` (see [this](#log-entries))  
+Previously checked out branches will be saved to the source top dir at `saved_branches.list`
+Any non pushed repos will be checked out to a staging branch
 
-### flags
+### Flags
 ##### --delete-staging
-will remove the staging branch for the given AOSP tag and exit
+Will remove the staging branch for the given AOSP tag and exit
 ##### --push-staging
-will push (to the set default remote and branch / saved branches in `saved_branches.list`) and remove the remaining staging branches, while promting one by one
+Will push (to the set default remote and branch / saved branches in `saved_branches.list`) and remove the remaining staging branches, while promting one by one
+
+### Log entries
+##### Positive
+* `nochange <path>`: There was no change from previous tag
+* `clean <path>`: Merged with no conflicts
+* `solved <path>`: Merged after solving conflicts
+* `pushed <path>`: Merge was pushed
+
+##### Negative
+* `conflict <path>`: Conflicts in merge were not solved (kept for later)
+* `invalid <path>`: AOSP remote is not valid or the repo doesn't even exist there
