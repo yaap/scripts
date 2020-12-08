@@ -222,7 +222,7 @@ repo sync -j$(nproc)
 for PROJECTPATH in ${PROJECTPATHS}; do
     cd "${TOP}/${PROJECTPATH}"
     git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
-    repo start "${STAGINGBRANCH}" .
+    git checkout -b "${STAGINGBRANCH}"
     git branch --set-upstream-to=$DEFAULTREMOTE/$DEFAULTBRANCH
     aospremote
     git fetch -q --tags aosp "${NEWTAG}"
