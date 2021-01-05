@@ -236,7 +236,7 @@ for PROJECTPATH in ${PROJECTPATHS}; do
         read ans
         if [[ $ans != 'n' ]]; then
             echo $PROJECTPATH >> $TOP/scripts/aosp-merger/merge_blacklist.txt
-            echo -e "Added ${BLUE}${PROJECTPATH}${NC} to balcklist"
+            echo -e "Added ${BLUE}${PROJECTPATH}${NC} to blacklist"
         fi
         gco_original
         continue
