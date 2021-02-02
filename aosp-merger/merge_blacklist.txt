@@ -44,3 +44,4 @@ vendor/qcom/opensource/interfaces
 vendor/qcom/opensource/power
 vendor/themes
 vendor/qcom/opensource/vibrator
+external/pulse
