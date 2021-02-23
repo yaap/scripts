@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2020 DerpFest Project
+# Copyright (C) 2021 Yet Another AOSP Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -75,41 +75,50 @@ verify_committed() {
 }
 
 # Handle flags
+flagCount=0
 isRemoveStaging=0
 isPushStaging=0
 isDiff=0
 while [[ $# > 2 ]]; do
     case "$1" in
         "--delete-staging") # delete the staging branch
-        echo -en "Are you sure? y/[n] > "
-        read ans
-        if [[ $ans == 'y' ]]; then
-            isRemoveStaging=1
-        else
-            echo -e "${RED}Aborting${NC}"
-            exit 0
-        fi
-        shift
-        ;;
+            echo -en "Are you sure? y/[n] > "
+            read ans
+            if [[ $ans == 'y' ]]; then
+                isRemoveStaging=1
+            else
+                echo -e "${RED}Aborting${NC}"
+                exit 0
+            fi
+            ((flagCount++))
+            shift
+            ;;
         "--push-staging") # push all remaining staging branches to default remote/branch
-        isPushStaging=1
-        shift
-        ;;
+            isPushStaging=1
+            ((flagCount++))
+            shift
+            ;;
         "--diff") # show the diff between old and new tags and exit
-        isDiff=1
-        shift
-        ;;
+            isDiff=1
+            ((flagCount++))
+            shift
+            ;;
         -*|--*) # unsupported flags
-        echo -e "${RED}ERROR! Unsupported flag ${BLUE}$1${NC}" >&2
-        usage
-        exit 1
-        ;;
+            echo -e "${RED}Unsupported flag ${BLUE}$1${NC}" >&2
+            usage
+            exit 1
+            ;;
     esac
 done
 
 # Verify argument count
 if [ "$#" -ne 2 ]; then
     usage
+    exit 1
+fi
+# Verify there is no more than 1 flag
+if [[ $flagCount > 1 ]]; then
+    echo -e "${RED}Only use one flag at a time${NC}"
     exit 1
 fi
 OLDTAG="${1}"
