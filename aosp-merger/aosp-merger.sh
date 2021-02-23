@@ -23,7 +23,7 @@ BLUE="\033[1;36m" # For info
 NC="\033[0m" # reset color
 
 usage() {
-    echo "Usage: ${0} (--delete-staging) (--push-staging) <oldaosptag> <newaosptag>"
+    echo "Usage: ${0} (--delete-staging) (--push-staging) (--diff) <oldaosptag> <newaosptag>"
 }
 
 gco_original() {
@@ -77,6 +77,7 @@ verify_committed() {
 # Handle flags
 isRemoveStaging=0
 isPushStaging=0
+isDiff=0
 while [[ $# > 2 ]]; do
     case "$1" in
         "--delete-staging") # delete the staging branch
@@ -92,6 +93,10 @@ while [[ $# > 2 ]]; do
         ;;
         "--push-staging") # push all remaining staging branches to default remote/branch
         isPushStaging=1
+        shift
+        ;;
+        "--diff") # show the diff between old and new tags and exit
+        isDiff=1
         shift
         ;;
         -*|--*) # unsupported flags
@@ -172,6 +177,38 @@ if [[ $isRemoveStaging == 1 ]]; then
     exit 0
 fi
 
+if [[ $isDiff == 1 ]]; then
+    echo -en "${YELLOW}Save the diff to a file? [y]/n > ${NC}"
+    read ans
+    if [[ $ans != 'n' ]]; then
+        if [[ -f "${TOP}/${NEWTAG}.diff" ]]; then
+            rm "${TOP}/${NEWTAG}.diff"
+        fi
+        touch "${TOP}/${NEWTAG}.diff"
+        echo "Diff from ${OLDTAG} to ${NEWTAG}:" >> "${TOP}/${NEWTAG}.diff"
+        echo >> "${TOP}/${NEWTAG}.diff"
+    fi
+    echo -e "#### Showing diff from ${BLUE}${OLDTAG}${NC} to ${BLUE}${NEWTAG}${NC} ####"
+    for PROJECTPATH in ${PROJECTPATHS}; do
+        cd "${TOP}/${PROJECTPATH}"
+        aospremote
+        echo -e "Diff for ${BLUE}${PROJECTPATH}${NC}"
+        git fetch -q --tags aosp "${OLDTAG}"
+        git fetch -q --tags aosp "${NEWTAG}"
+        if [[ $ans != 'n' ]]; then
+            echo "Diff for ${PROJECTPATH}:" >> "${TOP}/${NEWTAG}.diff"
+            git --no-pager diff $OLDTAG $NEWTAG | tee -a "${TOP}/${NEWTAG}.diff"
+            echo >> "${TOP}/${NEWTAG}.diff"
+        else
+            git --no-pager diff $OLDTAG $NEWTAG
+        fi
+    done
+    if [[ $ans != 'n' ]]; then
+        echo -e "Diff file saved at ${BLUE}${TOP}/${NEWTAG}.diff${NC}"
+    fi
+    exit 0
+fi
+
 # Remove and create an empty list file of saved branches
 rm -f "${SAVEDBRANCHES}"
 touch "${SAVEDBRANCHES}"
@@ -232,7 +269,7 @@ for PROJECTPATH in ${PROJECTPATHS}; do
         echo -en "${RED}"
         echo -e "invalid\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
         echo -e "${NC}"
-        echo -en "${YELLOW}Add to blacklist? [y]/n > "
+        echo -en "${YELLOW}Add to blacklist? [y]/n > ${NC}"
         read ans
         if [[ $ans != 'n' ]]; then
             echo $PROJECTPATH >> $TOP/scripts/aosp-merger/merge_blacklist.txt
