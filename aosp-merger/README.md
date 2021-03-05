@@ -32,6 +32,7 @@ Will push (to the set default remote and branch / saved branches in `saved_branc
 * `clean <path>`: Merged with no conflicts
 * `solved <path>`: Merged after solving conflicts
 * `pushed <path>`: Merge was pushed
+* `fail <path>`: Merge failed
 
 ##### Negative
 * `conflict <path>`: Conflicts in merge were not solved (kept for later)

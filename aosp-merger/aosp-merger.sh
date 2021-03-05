@@ -218,12 +218,40 @@ if [[ $isDiff == 1 ]]; then
     exit 0
 fi
 
-# Remove and create an empty list file of saved branches
-rm -f "${SAVEDBRANCHES}"
-touch "${SAVEDBRANCHES}"
+# Handle and create an empty list file of saved branches
+isReuse=0
+if [[ -f $SAVEDBRANCHES ]]; then
+    i=0
+    echo -e "${YELLOW}Saved branches file exist.${NC}"
+    echo "1. Remove (default)"
+    echo "2. Rename"
+    echo "3. Reuse" # for aborted merge in progress
+    echo -n "Select > "
+    read ans
+    case $ans in
+        "2")
+            while [[ -f "${i}${SAVEDBRANCHES}" ]]; do
+                ((i++))
+            done
+            mv $SAVEDBRANCHES "${i}${SAVEDBRANCHES}"
+            touch "${SAVEDBRANCHES}"
+            echo -e "Renamed to ${BLUE}${i}${SAVEDBRANCHES}${NC}"
+            ;;
+        "3")
+            isReuse=1
+            ;;
+        *)
+            rm -f $SAVEDBRANCHES
+            ;;
+    esac
+else
+    touch "${SAVEDBRANCHES}"
+fi
 
 # Remove any existing list of merged repos file
-rm -f "${MERGEDREPOS}"
+if [[ $isReuse == 0 ]]; then
+    rm -f "${MERGEDREPOS}"
+fi
 
 # Make sure manifest and forked repos are in a consistent state
 echo "#### Verifying there are no uncommitted changes on forked AOSP projects and saving local branches ####"
@@ -231,12 +259,14 @@ for PROJECTPATH in ${PROJECTPATHS} .repo/manifests; do
     cd "${TOP}/${PROJECTPATH}"
     verify_committed
 
-    # save the current branch
-    LOCALBRANCH=$(git rev-parse --abbrev-ref HEAD)
-    if [[ $LOCALBRANCH != "HEAD" ]]; then
-        echo "${PROJECTPATH} -> ${LOCALBRANCH}" >> $SAVEDBRANCHES
-    else
-        echo "${PROJECTPATH} -> ${DEFAULTREMOTE}/${DEFAULTBRANCH}" >> $SAVEDBRANCHES
+    if [[ $isReuse == 0 ]]; then
+        # save the current branch
+        LOCALBRANCH=$(git rev-parse --abbrev-ref HEAD)
+        if [[ $LOCALBRANCH != "HEAD" ]]; then
+            echo "${PROJECTPATH} -> ${LOCALBRANCH}" >> $SAVEDBRANCHES
+        else
+            echo "${PROJECTPATH} -> ${DEFAULTREMOTE}/${DEFAULTBRANCH}" >> $SAVEDBRANCHES
+        fi
     fi
 
     # Making sure we are checked-out to the head of the default remote
@@ -258,11 +288,14 @@ git branch --set-upstream-to=$DEFAULTREMOTE/$DEFAULTBRANCH
 git fetch https://android.googlesource.com/platform/build $NEWTAG
 git merge FETCH_HEAD
 echo -e "${GREEN}#### build/make & manifest merged. ${RED}Please push manually at the end${GREEN} ####${NC}"
-echo -en "${YELLOW}Press any key after resolving and committing build/make & manifest${NC}"
-read -n 1 -s -r
+read -n 1 -r -s
 
 # Sync
 repo sync -j$(nproc)
+if [[ $? != 0 ]]; then
+    echo -e "${RED}Sync failed. Fix the errors and press any key to continue${NC}"
+    read -n 1 -r -s
+fi
 
 # Iterate over each forked project
 for PROJECTPATH in ${PROJECTPATHS}; do
@@ -299,6 +332,39 @@ for PROJECTPATH in ${PROJECTPATHS}; do
 
     echo -e "#### Merging ${BLUE}${NEWTAG}${NC} into ${BLUE}${PROJECTPATH}${NC} ####"
     git merge --no-edit --log "${NEWTAG}"
+    if [[ $? != 0 && ! $(git status --porcelain) ]]; then
+        echo -e "${RED}Merge failed${NC}"
+        echo "1. Skip (default)"
+        echo "2. Mark as solved"
+        echo "3. Add to blacklist"
+        echo -n "Select > "
+        read ans
+        case $ans in
+            "2")
+                echo -en "${GREEN}"
+                echo -e "solved\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
+                echo -e "${NC}"
+                git_push
+                continue
+                ;;
+            "3")
+                echo -en "${RED}"
+                echo -e "invalid\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
+                echo -e "${NC}"
+                echo $PROJECTPATH >> $TOP/scripts/aosp-merger/merge_blacklist.txt
+                echo -e "Added ${BLUE}${PROJECTPATH}${NC} to blacklist"
+                gco_original
+                continue
+                ;;
+            *)
+                echo -en "${RED}"
+                echo -e "fail\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
+                echo -en "${NC}"
+                gco_original
+                continue
+                ;;
+        esac
+    fi
 
     if [[ -n "$(git status --porcelain)" ]]; then
         echo -e "${RED}Conflict(s) in ${BLUE}${PROJECTPATH}${NC}"
