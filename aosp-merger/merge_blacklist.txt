@@ -15,7 +15,6 @@ prebuilts/clang/host/linux-x86
 prebuilts/clang/host/linux-x86/clang-proton
 prebuilts/gcc/linux-x86/aarch64/aarch64-elf
 system/apex
-system/keymaster
 system/netd
 system/qcom
 manifest
@@ -45,3 +44,6 @@ vendor/qcom/opensource/power
 vendor/themes
 vendor/qcom/opensource/vibrator
 external/pulse
+hardware/qcom-caf/thermal
+vendor/qcom/opensource/data-ipa-cfg-mgr
+vendor/qcom/opensource/dataservices
