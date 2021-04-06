@@ -47,3 +47,8 @@ external/pulse
 hardware/qcom-caf/thermal
 vendor/qcom/opensource/data-ipa-cfg-mgr
 vendor/qcom/opensource/dataservices
+hardware/qcom-caf/sm8250/audio
+hardware/qcom-caf/sm8250/display
+hardware/qcom-caf/sm8250/media
+packages/apps/SimpleDeviceConfig
+vendor/qcom/opensource/commonsys-intf/display

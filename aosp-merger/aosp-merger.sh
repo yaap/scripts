@@ -288,6 +288,7 @@ git branch --set-upstream-to=$DEFAULTREMOTE/$DEFAULTBRANCH
 git fetch https://android.googlesource.com/platform/build $NEWTAG
 git merge FETCH_HEAD
 echo -e "${GREEN}#### build/make & manifest merged. ${RED}Please push manually at the end${GREEN} ####${NC}"
+echo -e "Press any key to continue"
 read -n 1 -r -s
 
 # Sync
