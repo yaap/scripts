@@ -52,3 +52,6 @@ hardware/qcom-caf/sm8250/display
 hardware/qcom-caf/sm8250/media
 packages/apps/SimpleDeviceConfig
 vendor/qcom/opensource/commonsys-intf/display
+packages/apps/Jelly
+packages/apps/Snap
+tools/extract-utils
