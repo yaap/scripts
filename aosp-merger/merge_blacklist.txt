@@ -55,3 +55,7 @@ vendor/qcom/opensource/commonsys-intf/display
 packages/apps/Jelly
 packages/apps/Snap
 tools/extract-utils
+vendor/lawnchair
+vendor/nxp/opensource/pn5xx/halimpl
+vendor/nxp/opensource/sn100x/halimpl
+vendor/qcom/opensource/usb
