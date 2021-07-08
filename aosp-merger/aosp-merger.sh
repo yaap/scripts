@@ -60,7 +60,7 @@ git_push() {
 # Verifies there are no uncommitted changes on the current path
 verify_committed() {
     if [[ -n "$(git status --porcelain)" ]]; then
-        echo -e "${RED}Path ${BLUE}${PROJECTPATH}${RED} has uncommitted changes.${NC}"
+        echo -e "${RED}Path ${BLUE}${PROJECTPATH}${RED} has uncommitted changes.${NC}" >&2
         git --no-pager diff
         git --no-pager diff --staged
         echo -en "${YELLOW}Clear uncommitted changes (see above) y/[n] > ${NC}"
@@ -81,7 +81,7 @@ push_check() {
     cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w pushed
     if [[ $? != 0 ]]; then
         isErr=1
-        echo -e "${RED}Project ${BLUE}${PROJECTPATH}${RED} was not pushed${NC}"
+        echo -e "${RED}Project ${BLUE}${PROJECTPATH}${RED} was not pushed${NC}" >&2
     fi
 }
 
@@ -93,7 +93,7 @@ sanity_check() {
         cat $MERGEDREPOS | grep -w $PROJECTPATH
         if [[ $? != 0 ]]; then
             isErr=1
-            echo -e "${RED}Project ${BLUE}${PROJECTPATH}${RED} was skipped${NC}"
+            echo -e "${RED}Project ${BLUE}${PROJECTPATH}${RED} was skipped${NC}" >&2
             continue
         fi
         cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w invalid
@@ -129,7 +129,7 @@ sanity_check() {
             git merge HEAD &> /dev/null
             if [[ $? != 0 ]]; then # a merge is in progress
                 isErr=1
-                echo -e "${RED}Conflicts in ${BLUE}${PROJECTPATH}${RED} were not solved${NC}"
+                echo -e "${RED}Conflicts in ${BLUE}${PROJECTPATH}${RED} were not solved${NC}" >&2
             else # solved. did we push?
                 push_check
             fi
@@ -143,7 +143,7 @@ sanity_check() {
         fi
     done
     if [[ $isErr == 1 ]]; then
-        echo -e "${RED}Errors found - view above${NC}"
+        echo -e "${RED}Errors found - view above${NC}" >&2
     else
         echo -en "${GREEN}Sanity check passed"
         if [[ $isWarn == 1 ]]; then
@@ -210,7 +210,7 @@ if [ "$#" -ne 2 ]; then
 fi
 # Verify there is no more than 1 flag
 if [[ $flagCount > 1 ]]; then
-    echo -e "${RED}Only use one flag at a time${NC}"
+    echo -e "${RED}Only use one flag at a time${NC}" >&2
     exit 1
 fi
 OLDTAG="${1}"
@@ -218,7 +218,7 @@ NEWTAG="${2}"
 
 # Check to make sure this is being run from the top level repo dir
 if [ ! -e "build/envsetup.sh" ]; then
-    echo -e "${RED}Must be run from the top level repo dir${NC}"
+    echo -e "${RED}Must be run from the top level repo dir${NC}" >&2
     exit 1
 fi
 
@@ -393,7 +393,7 @@ fi
 if [[ $isReuse == 0 ]]; then
     repo sync -j$(nproc)
     if [[ $? != 0 ]]; then
-        echo -e "${RED}Sync failed. Fix the errors and press any key to continue${NC}"
+        echo -e "${RED}Sync failed. Fix the errors and press any key to continue${NC}" >&2
         read -n 1 -r -s
     fi
 fi
