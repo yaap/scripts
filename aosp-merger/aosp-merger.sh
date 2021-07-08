@@ -225,7 +225,7 @@ if [[ -f $SAVEDBRANCHES ]]; then
     echo -e "${YELLOW}Saved branches file exist.${NC}"
     echo "1. Remove (default)"
     echo "2. Rename"
-    echo "3. Reuse" # for aborted merge in progress
+    echo "3. Reuse (resume)" # for aborted merge in progress
     echo -n "Select > "
     read ans
     case $ans in
@@ -249,9 +249,7 @@ else
 fi
 
 # Remove any existing list of merged repos file
-if [[ $isReuse == 0 ]]; then
-    rm -f "${MERGEDREPOS}"
-fi
+[[ $isReuse == 0 ]] && rm -f "${MERGEDREPOS}"
 
 # Make sure manifest and forked repos are in a consistent state
 echo "#### Verifying there are no uncommitted changes on forked AOSP projects and saving local branches ####"
@@ -267,39 +265,50 @@ for PROJECTPATH in ${PROJECTPATHS} .repo/manifests; do
         else
             echo "${PROJECTPATH} -> ${DEFAULTREMOTE}/${DEFAULTBRANCH}" >> $SAVEDBRANCHES
         fi
+        # Making sure we are checked-out to the head of the default remote
+        git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
     fi
-
-    # Making sure we are checked-out to the head of the default remote
-    git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
 done
 echo -e "${GREEN}#### Verification complete - no uncommitted changes found ####${NC}"
 cd $TOP
 
 # Merging build/make & manifest
-echo "#### Merging build/make & manifest ####"
-cd .repo/manifests
-git checkout -b "${STAGINGBRANCH}"
-git branch --set-upstream-to=origin/$DEFAULTBRANCH
-git fetch https://android.googlesource.com/platform/manifest $NEWTAG
-git merge FETCH_HEAD
-cd ../../build/make
-git checkout -b "${STAGINGBRANCH}"
-git branch --set-upstream-to=$DEFAULTREMOTE/$DEFAULTBRANCH
-git fetch https://android.googlesource.com/platform/build $NEWTAG
-git merge FETCH_HEAD
-echo -e "${GREEN}#### build/make & manifest merged. ${RED}Please push manually at the end${GREEN} ####${NC}"
-echo -e "Press any key to continue"
-read -n 1 -r -s
+if [[ $isReuse == 0 ]]; then
+    echo "#### Merging build/make & manifest ####"
+    cd .repo/manifests
+    git checkout -b "${STAGINGBRANCH}"
+    git branch --set-upstream-to=origin/$DEFAULTBRANCH
+    git fetch https://android.googlesource.com/platform/manifest $NEWTAG
+    git merge FETCH_HEAD
+    cd ../../build/make
+    git checkout -b "${STAGINGBRANCH}"
+    git branch --set-upstream-to=$DEFAULTREMOTE/$DEFAULTBRANCH
+    git fetch https://android.googlesource.com/platform/build $NEWTAG
+    git merge FETCH_HEAD
+    echo -e "${GREEN}#### build/make & manifest merged. ${RED}Please push manually at the end${GREEN} ####${NC}"
+    echo -e "Press any key to continue"
+    read -n 1 -r -s
+fi
 
 # Sync
-repo sync -j$(nproc)
-if [[ $? != 0 ]]; then
-    echo -e "${RED}Sync failed. Fix the errors and press any key to continue${NC}"
-    read -n 1 -r -s
+if [[ $isReuse == 0 ]]; then
+    repo sync -j$(nproc)
+    if [[ $? != 0 ]]; then
+        echo -e "${RED}Sync failed. Fix the errors and press any key to continue${NC}"
+        read -n 1 -r -s
+    fi
 fi
 
 # Iterate over each forked project
 for PROJECTPATH in ${PROJECTPATHS}; do
+    if [[ $isReuse == 0 ]]; then
+        # skip if we already did
+        if [[ ! -z $(cat $MERGEDREPOS | grep -w $PROJECTPATH) ]]; then
+            echo -e "Project ${BLUE}${PROJECTPATH}${NC} was found. Skipping"
+            continue
+        fi
+        echo -e "${GREEN}Resuming at ${BLUE}${PROJECTPATH}${NC}"
+    fi
     cd "${TOP}/${PROJECTPATH}"
     git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
     git checkout -b "${STAGINGBRANCH}"
@@ -386,7 +395,7 @@ for PROJECTPATH in ${PROJECTPATHS}; do
                 fi
             done
         fi
-        if [[ $WAIT_ON_CONFLICT != true ]] || [[ $lKey == 'l' ]]; then
+        if [[ $WAIT_ON_CONFLICT == false ]] || [[ $lKey == 'l' ]]; then
             echo -en "${RED}"
             echo -e "conflict\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
             echo -en "${NC}"
