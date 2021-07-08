@@ -23,7 +23,7 @@ BLUE="\033[1;36m" # For info
 NC="\033[0m" # reset color
 
 usage() {
-    echo "Usage: ${0} (--delete-staging) (--push-staging) (--diff) <oldaosptag> <newaosptag>"
+    echo "Usage: ${0} (--delete-staging) (--push-staging) (--diff) (--check) <oldaosptag> <newaosptag>"
 }
 
 gco_original() {
@@ -74,11 +74,92 @@ verify_committed() {
     fi
 }
 
+# verifies that a project was pushed. helper for sanity_check()
+# returns 1 on error, 0 otherwise
+# NOTE! Macro use only! $MERGEDREPOS & $PROJECTPATH must be set
+push_check() {
+    cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w pushed
+    if [[ $? != 0 ]]; then
+        isErr=1
+        echo -e "${RED}Project ${BLUE}${PROJECTPATH}${RED} was not pushed${NC}"
+    fi
+}
+
+# verifies that the merge was done successfully
+sanity_check() {
+    isErr=0
+    isWarn=0
+    for PROJECTPATH in ${PROJECTPATHS}; do
+        cat $MERGEDREPOS | grep -w $PROJECTPATH
+        if [[ $? != 0 ]]; then
+            isErr=1
+            echo -e "${RED}Project ${BLUE}${PROJECTPATH}${RED} was skipped${NC}"
+            continue
+        fi
+        cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w invalid
+        if [[ $? == 0 ]]; then
+            echo -en "${YELLOW}Project ${BLUE}${PROJECTPATH}${YELLOW} was marked as "
+            echo -e "invalid but is not blacklisted${NC}"
+            continue
+        fi
+        cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w fail
+        if [[ $? == 0 ]]; then
+            echo -en "${YELLOW}Project ${BLUE}${PROJECTPATH}${YELLOW} failed the merge "
+            echo -e "and was skipped by user${NC}"
+            continue
+        fi
+        cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w nochange
+        [[ $? == 0 ]] && continue # no change in this repo
+        cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w clean
+        if [[ $? == 0 ]]; then
+            # merged clean. did we push?
+            push_check
+            continue
+        fi
+        cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w solved
+        if [[ $? == 0 ]]; then
+            # solved conflicts. did we push?
+            push_check
+            continue
+        fi
+        cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w conflict
+        if [[ $? == 0 ]]; then
+            # conflicts kept. did we solve it?
+            cd $PROJECTPATH
+            git merge HEAD &> /dev/null
+            if [[ $? != 0 ]]; then # a merge is in progress
+                isErr=1
+                echo -e "${RED}Conflicts in ${BLUE}${PROJECTPATH}${RED} were not solved${NC}"
+            else # solved. did we push?
+                push_check
+            fi
+            cd $TOP
+            continue
+        fi
+        # if we arrived here and project is marked as pushed we have no data to decide
+        cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w pushed
+        if [[ $? == 0 ]]; then
+            echo -e "${YELLOW}Project ${BLUE}${PROJECTPATH}${YELLOW} was pushed with no merge${NC}"
+        fi
+    done
+    if [[ $isErr == 1 ]]; then
+        echo -e "${RED}Errors found - view above${NC}"
+    else
+        echo -en "${GREEN}Sanity check passed"
+        if [[ $isWarn == 1 ]]; then
+            echo -en " with warnings - view above"
+        fi
+        echo -e "${NC}"
+    fi
+    exit $isErr
+}
+
 # Handle flags
 flagCount=0
 isRemoveStaging=0
 isPushStaging=0
 isDiff=0
+isCheck=0
 while [[ $# > 2 ]]; do
     case "$1" in
         "--delete-staging") # delete the staging branch
@@ -95,12 +176,23 @@ while [[ $# > 2 ]]; do
             ;;
         "--push-staging") # push all remaining staging branches to default remote/branch
             isPushStaging=1
-            ((flagCount++))
+            if [[ $isCheck == 1 ]]; then
+                isCheck=0
+            else
+                ((flagCount++))
+            fi
             shift
             ;;
         "--diff") # show the diff between old and new tags and exit
             isDiff=1
             ((flagCount++))
+            shift
+            ;;
+        "--check") # check for sanity
+            if [[ $isPushStaging != 1 ]]; then
+                isCheck=1
+                ((flagCount++))
+            fi
             shift
             ;;
         -*|--*) # unsupported flags
@@ -169,6 +261,11 @@ if [[ $isPushStaging == 1 ]]; then
             git_push
         fi
     done
+    echo -en "${YELLOW}Is the merge done (check for sanity)? [n]/y > ${NC}"
+    read ans
+    if [[ $ans == 'y' ]]; then
+        sanity_check
+    fi
     exit 0
 fi
 
@@ -217,6 +314,8 @@ if [[ $isDiff == 1 ]]; then
     fi
     exit 0
 fi
+
+[[ $isCheck == 1 ]] && sanity_check
 
 # Handle and create an empty list file of saved branches
 isReuse=0
@@ -405,5 +504,12 @@ for PROJECTPATH in ${PROJECTPATHS}; do
         echo -e "clean\t\t${PROJECTPATH}" >> "${MERGEDREPOS}"
         git_push
     fi
-
 done
+
+echo -en "${YELLOW}Is the merge done (check for sanity)? [n]/y > ${NC}"
+read ans
+if [[ $ans == 'y' ]]; then
+    sanity_check
+fi
+
+exit 0

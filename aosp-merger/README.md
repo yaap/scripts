@@ -2,7 +2,7 @@
 
 ### Usage
 Simply run the script from source top as follows:  
-`./scripts/aosp-merger/aosp-merger.sh (--delete-staging) (--push-staging) <oldaosptag> <newaosptag>`  
+`./scripts/aosp-merger/aosp-merger.sh (--delete-staging) (--push-staging) (--diff) (--check) <oldaosptag> <newaosptag>`  
 
 * both `<oldaosptag>` and `<newaosptag>` are always required
 * when using flags the script will perform the action(s) and exit
@@ -25,6 +25,12 @@ Any non pushed repos will be checked out to a staging branch
 Will remove the staging branch for the given AOSP tag and exit
 ##### --push-staging
 Will push (to the set default remote and branch / saved branches in `saved_branches.list`) and remove the remaining staging branches, while promting one by one
+##### --diff
+Will show the diff between the two tags, offer to save to a file and exit  
+Do note the resulting output &/ file can get huge
+##### --check
+Performs a sanity check for the merge using `merged_repos.txt`  
+Will summarize errors, warnings and exit
 
 ### Log entries
 ##### Positive
@@ -32,8 +38,8 @@ Will push (to the set default remote and branch / saved branches in `saved_branc
 * `clean <path>`: Merged with no conflicts
 * `solved <path>`: Merged after solving conflicts
 * `pushed <path>`: Merge was pushed
-* `fail <path>`: Merge failed
 
 ##### Negative
 * `conflict <path>`: Conflicts in merge were not solved (kept for later)
 * `invalid <path>`: AOSP remote is not valid or the repo doesn't even exist there
+* `fail <path>`: Merge failed (& was skipped by the user)
