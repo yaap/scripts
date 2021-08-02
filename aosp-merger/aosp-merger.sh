@@ -35,7 +35,7 @@ gco_original() {
         git checkout $line > /dev/null 2>&1
     else
         echo -en "${YELLOW}Default branch for ${BLUE}${PROJECTPATH}${YELLOW} not found. "
-        echo -e "Checking out to ${BLUE}${DEFAULTREMOTE0}/${DEFAULTBRANCH}${NC}"
+        echo -e "Checking out to ${BLUE}${DEFAULTREMOTE}/${DEFAULTBRANCH}${NC}"
         git checkout $DEFAULTREMOTE/$DEFAULTBRANCH > /dev/null 2>&1
     fi
     git branch -D $STAGINGBRANCH
@@ -78,8 +78,7 @@ verify_committed() {
 # returns 1 on error, 0 otherwise
 # NOTE! Macro use only! $MERGEDREPOS & $PROJECTPATH must be set
 push_check() {
-    cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w pushed
-    if [[ $? != 0 ]]; then
+    if [[ -z $(cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w pushed) ]]; then
         isErr=1
         echo -e "${RED}Project ${BLUE}${PROJECTPATH}${RED} was not pushed${NC}" >&2
     fi
@@ -90,42 +89,35 @@ sanity_check() {
     isErr=0
     isWarn=0
     for PROJECTPATH in ${PROJECTPATHS}; do
-        cat $MERGEDREPOS | grep -w $PROJECTPATH
-        if [[ $? != 0 ]]; then
+        if [[ -z $(cat $MERGEDREPOS | grep -w $PROJECTPATH) ]]; then
             isErr=1
             echo -e "${RED}Project ${BLUE}${PROJECTPATH}${RED} was skipped${NC}" >&2
             continue
         fi
-        cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w invalid
-        if [[ $? == 0 ]]; then
+        if [[ -n $(cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w invalid) ]]; then
             echo -en "${YELLOW}Project ${BLUE}${PROJECTPATH}${YELLOW} was marked as "
             echo -e "invalid but is not blacklisted${NC}"
             continue
         fi
-        cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w fail
-        if [[ $? == 0 ]]; then
+        if [[ -n $(cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w fail) ]]; then
             echo -en "${YELLOW}Project ${BLUE}${PROJECTPATH}${YELLOW} failed the merge "
             echo -e "and was skipped by user${NC}"
             continue
         fi
-        cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w nochange
-        [[ $? == 0 ]] && continue # no change in this repo
-        cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w clean
-        if [[ $? == 0 ]]; then
+        [[ -n $(cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w nochange) ]] && continue # no change in this repo
+        if [[ -n $(cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w clean) ]]; then
             # merged clean. did we push?
             push_check
             continue
         fi
-        cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w solved
-        if [[ $? == 0 ]]; then
+        if [[ -n $(cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w solved) ]]; then
             # solved conflicts. did we push?
             push_check
             continue
         fi
-        cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w conflict
-        if [[ $? == 0 ]]; then
+        if [[ -n $(cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w conflict) ]]; then
             # conflicts kept. did we solve it?
-            cd $PROJECTPATH
+            cd $PROJECTPATH || exit 2
             git merge HEAD &> /dev/null
             if [[ $? != 0 ]]; then # a merge is in progress
                 isErr=1
@@ -133,12 +125,11 @@ sanity_check() {
             else # solved. did we push?
                 push_check
             fi
-            cd $TOP
+            cd $TOP || exit 2
             continue
         fi
         # if we arrived here and project is marked as pushed we have no data to decide
-        cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w pushed
-        if [[ $? == 0 ]]; then
+        if [[ -n $(cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w pushed) ]]; then
             echo -e "${YELLOW}Project ${BLUE}${PROJECTPATH}${YELLOW} was pushed with no merge${NC}"
         fi
     done
@@ -160,7 +151,7 @@ isRemoveStaging=0
 isPushStaging=0
 isDiff=0
 isCheck=0
-while [[ $# > 2 ]]; do
+while [[ $# -gt 2 ]]; do
     case "$1" in
         "--delete-staging") # delete the staging branch
             echo -en "Are you sure? y/[n] > "
@@ -195,7 +186,7 @@ while [[ $# > 2 ]]; do
             fi
             shift
             ;;
-        -*|--*) # unsupported flags
+        --*|-*) # unsupported flags
             echo -e "${RED}Unsupported flag ${BLUE}$1${NC}" >&2
             usage
             exit 1
@@ -209,7 +200,7 @@ if [ "$#" -ne 2 ]; then
     exit 1
 fi
 # Verify there is no more than 1 flag
-if [[ $flagCount > 1 ]]; then
+if [[ $flagCount -gt 1 ]]; then
     echo -e "${RED}Only use one flag at a time${NC}" >&2
     exit 1
 fi
@@ -253,10 +244,10 @@ echo
 if [[ $isPushStaging == 1 ]]; then
     echo "#### Pushing all remaining staging branches ####"
     for PROJECTPATH in ${PROJECTPATHS}; do
-        cd "${TOP}/${PROJECTPATH}"
+        cd "${TOP}/${PROJECTPATH}" || exit 2
 
         LOCALBRANCH=$(git rev-parse --abbrev-ref HEAD)
-        if [[ $LOCALBRANCH == $STAGINGBRANCH ]]; then # if checked out to the staging branch
+        if [[ $LOCALBRANCH == "$STAGINGBRANCH" ]]; then # if checked out to the staging branch
             verify_committed
             git_push
         fi
@@ -272,7 +263,7 @@ fi
 if [[ $isRemoveStaging == 1 ]]; then
     echo -e "#### Removing all staging branches for tag ${BLUE}${NEWTAG}${NC} ####"
     for PROJECTPATH in ${PROJECTPATHS}; do
-        cd "${TOP}/${PROJECTPATH}"
+        cd "${TOP}/${PROJECTPATH}" || exit 2
         git show-ref --verify --quiet refs/heads/$STAGINGBRANCH
         # if staging branch exists on the repo
         if [[ $? == 0 ]]; then
@@ -296,7 +287,7 @@ if [[ $isDiff == 1 ]]; then
     fi
     echo -e "#### Showing diff from ${BLUE}${OLDTAG}${NC} to ${BLUE}${NEWTAG}${NC} ####"
     for PROJECTPATH in ${PROJECTPATHS}; do
-        cd "${TOP}/${PROJECTPATH}"
+        cd "${TOP}/${PROJECTPATH}" || exit 2
         aospremote
         echo -e "Diff for ${BLUE}${PROJECTPATH}${NC}"
         git fetch -q --tags aosp "${OLDTAG}"
@@ -353,7 +344,7 @@ fi
 # Make sure manifest and forked repos are in a consistent state
 echo "#### Verifying there are no uncommitted changes on forked AOSP projects and saving local branches ####"
 for PROJECTPATH in ${PROJECTPATHS} .repo/manifests; do
-    cd "${TOP}/${PROJECTPATH}"
+    cd "${TOP}/${PROJECTPATH}" || exit 2
     verify_committed
 
     if [[ $isReuse == 0 ]]; then
@@ -369,17 +360,17 @@ for PROJECTPATH in ${PROJECTPATHS} .repo/manifests; do
     fi
 done
 echo -e "${GREEN}#### Verification complete - no uncommitted changes found ####${NC}"
-cd $TOP
+cd $TOP || exit 2
 
 # Merging build/make & manifest
 if [[ $isReuse == 0 ]]; then
     echo "#### Merging build/make & manifest ####"
-    cd .repo/manifests
+    cd .repo/manifests || exit 2
     git checkout -b "${STAGINGBRANCH}"
     git branch --set-upstream-to=origin/$DEFAULTBRANCH
     git fetch https://android.googlesource.com/platform/manifest $NEWTAG
     git merge FETCH_HEAD
-    cd ../../build/make
+    cd ../../build/make || exit 2
     git checkout -b "${STAGINGBRANCH}"
     git branch --set-upstream-to=$DEFAULTREMOTE/$DEFAULTBRANCH
     git fetch https://android.googlesource.com/platform/build $NEWTAG
@@ -391,24 +382,29 @@ fi
 
 # Sync
 if [[ $isReuse == 0 ]]; then
-    repo sync -j$(nproc)
+    repo sync -j"$(nproc)"
     if [[ $? != 0 ]]; then
         echo -e "${RED}Sync failed. Fix the errors and press any key to continue${NC}" >&2
         read -n 1 -r -s
     fi
+else
+    announced=0
 fi
 
 # Iterate over each forked project
 for PROJECTPATH in ${PROJECTPATHS}; do
-    if [[ $isReuse == 0 ]]; then
+    if [[ $isReuse == 1 ]]; then
         # skip if we already did
         if [[ ! -z $(cat $MERGEDREPOS | grep -w $PROJECTPATH) ]]; then
             echo -e "Project ${BLUE}${PROJECTPATH}${NC} was found. Skipping"
             continue
         fi
-        echo -e "${GREEN}Resuming at ${BLUE}${PROJECTPATH}${NC}"
+        if [[ $announced == 0 ]]; then
+            echo -e "${GREEN}Resuming at ${BLUE}${PROJECTPATH}${NC}"
+            announced=1
+        fi
     fi
-    cd "${TOP}/${PROJECTPATH}"
+    cd "${TOP}/${PROJECTPATH}" || exit 2
     git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
     git checkout -b "${STAGINGBRANCH}"
     git branch --set-upstream-to=$DEFAULTREMOTE/$DEFAULTBRANCH
