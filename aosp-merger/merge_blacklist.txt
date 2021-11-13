@@ -59,3 +59,4 @@ vendor/lawnchair
 vendor/nxp/opensource/pn5xx/halimpl
 vendor/nxp/opensource/sn100x/halimpl
 vendor/qcom/opensource/usb
+vendor/qcom/opensource/fm-commonsys
