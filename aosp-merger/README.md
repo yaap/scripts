@@ -11,7 +11,7 @@ Simply run the script from source top as follows:
 * set `WAIT_ON_CONFLICT` to `true` or `false` according to preference
 * set `MANIFEST` var to the path of the manifest xml to search
 * add repos *paths* that should not be upstreamed to `merge_blacklist.txt` -
-sperated by newline
+separated by newline
 
 ### Description
 The script will go over the manifest file and try to merge the chosen AOSP tag for
@@ -24,7 +24,10 @@ Any non pushed repos will be checked out to a staging branch
 ##### --delete-staging
 Will remove the staging branch for the given AOSP tag and exit
 ##### --push-staging
-Will push (to the set default remote and branch / saved branches in `saved_branches.list`) and remove the remaining staging branches, while promting one by one
+Will push (to the set default remote and branch / saved branches in `saved_branches.list`) and remove the remaining staging branches, while prompting one by one
+##### --reset-original
+Will reset all original local branches to the new pushed heads after a merge.  
+Will also delete staging branches if any are still there
 ##### --diff
 Will show the diff between the two tags, offer to save to a file and exit  
 Do note the resulting output &/ file can get huge

@@ -149,6 +149,7 @@ sanity_check() {
 flagCount=0
 isRemoveStaging=0
 isPushStaging=0
+isResetOriginal=0
 isDiff=0
 isCheck=0
 while [[ $# -gt 2 ]]; do
@@ -172,6 +173,18 @@ while [[ $# -gt 2 ]]; do
             else
                 ((flagCount++))
             fi
+            shift
+            ;;
+        "--reset-original") # resets original local branch to whatever was pushed
+            echo -en "Are you sure? y/[n] > "
+            read ans
+            if [[ $ans == 'y' ]]; then
+                isResetOriginal=1
+            else
+                echo -e "${RED}Aborting${NC}"
+                exit 0
+            fi
+            ((flagCount++))
             shift
             ;;
         "--diff") # show the diff between old and new tags and exit
@@ -240,6 +253,29 @@ done
 echo -en "Old tag = ${BLUE}${OLDTAG}${NC} Branch = ${BLUE}${DEFAULTBRANCH}${NC} "
 echo -e "Staging branch = ${BLUE}${STAGINGBRANCH}${NC} Remote = ${BLUE}${DEFAULTREMOTE}${NC}"
 echo
+
+if [[ $isResetOriginal == 1 ]]; then
+    echo "#### resetting original local branches to new remote heads ####"
+    for PROJECTPATH in ${PROJECTPATHS}; do
+        cd "${TOP}/${PROJECTPATH}" || exit 2
+
+        lineNO=$(grep -nw -m 1 $PROJECTPATH $SAVEDBRANCHES | grep -Eo '^[^:]+')
+        if [[ $? == 0 ]]; then
+            line=$(sed "${lineNO}q;d" $SAVEDBRANCHES)
+            line=$(echo $line | sed "s,^.*-> ,,")
+            echo -e "Resetting ${BLUE}${line}${NC} on ${BLUE}${PROJECTPATH}${NC}"
+            git checkout $DEFAULTREMOTE/$DEFAULTBRANCH > /dev/null 2>&1
+            git checkout -B $line > /dev/null 2>&1
+        else
+            echo -en "${YELLOW}Default branch for ${BLUE}${PROJECTPATH}${YELLOW} not found. "
+            echo -e "Checking out to ${BLUE}${DEFAULTREMOTE}/${DEFAULTBRANCH}${NC}"
+            git checkout $DEFAULTREMOTE/$DEFAULTBRANCH > /dev/null 2>&1
+        fi
+        git branch -D $STAGINGBRANCH
+        echo -e "Removed ${BLUE}${STAGINGBRANCH}${NC}"
+    done
+    exit 0
+fi
 
 if [[ $isPushStaging == 1 ]]; then
     echo "#### Pushing all remaining staging branches ####"
