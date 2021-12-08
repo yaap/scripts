@@ -441,6 +441,7 @@ for PROJECTPATH in ${PROJECTPATHS}; do
         fi
     fi
     cd "${TOP}/${PROJECTPATH}" || exit 2
+    echo -e "Now working on ${BLUE}${PROJECTPATH}${NC}"
     git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
     git checkout -b "${STAGINGBRANCH}"
     git branch --set-upstream-to=$DEFAULTREMOTE/$DEFAULTBRANCH
