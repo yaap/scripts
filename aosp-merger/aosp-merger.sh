@@ -132,8 +132,16 @@ sanity_check() {
         fi
         [[ -n $(cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w nochange) ]] && continue # no change in this repo
         if [[ -n $(cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w clean) ]]; then
-            # merged clean. did we push?
+            # merged clean.
+            # did we push?
             push_check
+            # did we push an empty merge?
+            cd "${TOP}/${PROJECTPATH}" || exit 2
+            if [[ -z $(git --no-pager diff HEAD^) ]]; then
+                echo -en "${YELLOW}An empty merge in ${BLUE}${PROJECTPATH}${YELLOW} was pushed. "
+                echo -e "double check it${NC}"
+            fi
+            cd "${TOP}" || exit 2
             continue
         fi
         if [[ -n $(cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w solved) ]]; then
@@ -600,9 +608,27 @@ for PROJECTPATH in ${PROJECTPATHS}; do
             echo -en "${NC}"
         fi
     else
-        echo -e "${GREEN}Merged ${BLUE}${PROJECTPATH}${GREEN} with no conflicts${NC}"
-        echo -e "clean\t\t${PROJECTPATH}" >> "${MERGEDREPOS}"
-        git_push
+        # merged clean. double check it is not empty
+        isMergeEmpty=0
+        if [[ -z $(git --no-pager diff HEAD^) ]]; then
+            isMergeEmpty=1
+            echo -en "${YELLOW}Possible empty merge in ${BLUE}${PROJECTPATH}${YELLOW}"
+            echo -e " keep it? [n]/y >${NC}"
+            read ans
+            [[ $ans == 'y' ]] && isMergeEmpty=0
+        fi
+        if [[ $isMergeEmpty == 0 ]]; then
+            echo -e "${GREEN}Merged ${BLUE}${PROJECTPATH}${GREEN} with no conflicts"
+            echo -e "clean\t\t${PROJECTPATH}" >> "${MERGEDREPOS}"
+            echo -e "${NC}"
+            git_push
+        else
+            git reset --hard HEAD^
+            echo -en "${GREEN}"
+            echo -e "nochange\t\t${PROJECTPATH}" | tee -a "${MERGEDREPOS}"
+            echo -e "${NC}"
+            gco_original
+        fi
     fi
 done
 
