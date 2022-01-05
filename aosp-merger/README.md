@@ -2,7 +2,7 @@
 
 ### Usage
 Simply run the script from source top as follows:  
-`./scripts/aosp-merger/aosp-merger.sh (--delete-staging) (--push-staging) (--diff) (--check) <oldaosptag> <newaosptag>`  
+`./scripts/aosp-merger/aosp-merger.sh (--delete-staging) (--push-staging) (--reset-original) (--diff) (--check) <oldaosptag> <newaosptag>`  
 
 * both `<oldaosptag>` and `<newaosptag>` are always required
 * when using flags the script will perform the action(s) and exit

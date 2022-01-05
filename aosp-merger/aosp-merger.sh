@@ -22,10 +22,14 @@ YELLOW="\033[1;33m" # For input requests
 BLUE="\033[1;36m" # For info
 NC="\033[0m" # reset color
 
+# Outputs usage
 usage() {
-    echo "Usage: ${0} (--delete-staging) (--push-staging) (--diff) (--check) <oldaosptag> <newaosptag>"
+    echo -n "Usage: ${0} (--delete-staging) (--push-staging) (--reset-original)"
+    echo " (--diff) (--check) <oldaosptag> <newaosptag>"
 }
 
+# checks out to the original branch saved in $SAVEDBRANCHES
+# if not found checks back to the default
 gco_original() {
     lineNO=$(grep -nw -m 1 $PROJECTPATH $SAVEDBRANCHES | grep -Eo '^[^:]+')
     if [[ $? == 0 ]]; then
@@ -42,6 +46,7 @@ gco_original() {
     echo -e "Removed ${BLUE}${STAGINGBRANCH}${NC}"
 }
 
+# pushes the repo to $DEFAULTREMOTE/$DEFAULTBRANCH after prompting
 git_push() {
     echo -en "Push changes to default branch ${BLUE}${DEFAULTBRANCH}${NC} "
     echo -en "in ${BLUE}${PROJECTPATH}${NC}? y/[n] > "
@@ -54,6 +59,27 @@ git_push() {
         echo -en "${GREEN}"
         echo -e "pushed\t\t${PROJECTPATH}" | tee -a $MERGEDREPOS
         echo -en "${NC}"
+    fi
+}
+
+# pushes manifest and build/make to $DEFAULTREMOTE/$DEFAULTBRANCH after prompting
+git_push_manifest_make() {
+    echo -en "${YELLOW}Push manifest and build/make? [n]/y > ${NC}"
+    read ans
+    if [[ $ans == 'y' ]]; then
+        cd "${TOP}/build/make" || exit 2
+        git push $DEFAULTREMOTE $STAGINGBRANCH:$DEFAULTBRANCH
+        echo -en "${GREEN}"
+        echo -e "pushed\t\tbuild/make" | tee -a $MERGEDREPOS
+        echo -en "${NC}"
+        git branch -d $STAGINGBRANCH
+        cd "${TOP}/.repo/manifests" || exit 2
+        git push origin $STAGINGBRANCH:$DEFAULTBRANCH
+        echo -en "${GREEN}"
+        echo -e "pushed\t\tmanifest" | tee -a $MERGEDREPOS
+        echo -en "${NC}"
+        git branch -d $STAGINGBRANCH
+        cd "${TOP}" || exit 2
     fi
 }
 
@@ -133,6 +159,15 @@ sanity_check() {
             echo -e "${YELLOW}Project ${BLUE}${PROJECTPATH}${YELLOW} was pushed with no merge${NC}"
         fi
     done
+    # handling of build/make and manifest, just checking whether they are pushed
+    if [[ -z $(cat $MERGEDREPOS | grep -w manifest | grep -w pushed) ]]; then
+        echo -e "${BLUE}manifest${RED} was not pushed${NC}" >&2
+        isErr=1
+    fi
+    if [[ -z $(cat $MERGEDREPOS | grep -w build/make | grep -w pushed) ]]; then
+        echo -e "${BLUE}build/make${RED} was not pushed${NC}" >&2
+        isErr=1
+    fi
     if [[ $isErr == 1 ]]; then
         echo -e "${RED}Errors found - view above${NC}" >&2
     else
@@ -274,6 +309,16 @@ if [[ $isResetOriginal == 1 ]]; then
         git branch -D $STAGINGBRANCH
         echo -e "Removed ${BLUE}${STAGINGBRANCH}${NC}"
     done
+    # handling of build/make and manifest
+    cd "${TOP}/build/make" || exit 2
+    echo -e "Resetting ${BLUE}${DEFAULTBRANCH}${NC} on ${BLUE}build/make${NC}"
+    git checkout -B $DEFAULTBRANCH
+    git branch -D $STAGINGBRANCH
+    cd "${TOP}/.repo/manifests" || exit 2
+    echo -e "Resetting ${BLUE}${DEFAULTBRANCH}${NC} on ${BLUE}.repo/manifests${NC}"
+    git checkout -B $DEFAULTBRANCH
+    git branch -D $STAGINGBRANCH
+    cd "${TOP}" || exit 2
     exit 0
 fi
 
@@ -288,6 +333,7 @@ if [[ $isPushStaging == 1 ]]; then
             git_push
         fi
     done
+    git_push_manifest_make
     echo -en "${YELLOW}Is the merge done (check for sanity)? [n]/y > ${NC}"
     read ans
     if [[ $ans == 'y' ]]; then
@@ -306,6 +352,18 @@ if [[ $isRemoveStaging == 1 ]]; then
             gco_original
         fi
     done
+    # handling of build/make and manifest
+    cd "${TOP}/build/make" || exit 2
+    echo -e "Returning to ${BLUE}${DEFAULTBRANCH}${NC} on ${BLUE}build/make${NC}"
+    git checkout $DEFAULTBRANCH
+    git branch -D $STAGINGBRANCH
+    echo -e "Removed ${BLUE}${STAGINGBRANCH}${NC}"
+    cd "${TOP}/.repo/manifests" || exit 2
+    echo -e "Returning to ${BLUE}${DEFAULTBRANCH}${NC} on ${BLUE}.repo/manifests${NC}"
+    git checkout $DEFAULTBRANCH
+    git branch -D $STAGINGBRANCH
+    echo -e "Removed ${BLUE}${STAGINGBRANCH}${NC}"
+    cd "${TOP}" || exit 2
     echo -e "${GREEN}Removed ${BLUE}${STAGINGBRANCH}${GREEN} from all forked repos${NC}"
     exit 0
 fi
@@ -411,7 +469,8 @@ if [[ $isReuse == 0 ]]; then
     git branch --set-upstream-to=$DEFAULTREMOTE/$DEFAULTBRANCH
     git fetch https://android.googlesource.com/platform/build $NEWTAG
     git merge FETCH_HEAD
-    echo -e "${GREEN}#### build/make & manifest merged. ${RED}Please push manually at the end${GREEN} ####${NC}"
+    echo -en "${GREEN}#### build/make & manifest merged."
+    echo -e " ${RED}Please manually solve conflicts and commit${GREEN} ####${NC}"
     echo -e "Press any key to continue"
     read -n 1 -r -s
 fi
@@ -538,6 +597,8 @@ for PROJECTPATH in ${PROJECTPATHS}; do
         git_push
     fi
 done
+
+git_push_manifest_make
 
 echo -en "${YELLOW}Is the merge done (check for sanity)? [n]/y > ${NC}"
 read ans
