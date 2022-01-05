@@ -168,6 +168,11 @@ sanity_check() {
         echo -e "${BLUE}build/make${RED} was not pushed${NC}" >&2
         isErr=1
     fi
+    # checking if a repo sync was done
+    if [[ -z $(cat $MERGEDREPOS | grep -w synced) ]]; then
+        echo -e "${RED}A repo sync was not performed${NC}" >&2
+        isErr=1
+    fi
     if [[ $isErr == 1 ]]; then
         echo -e "${RED}Errors found - view above${NC}" >&2
     else
@@ -476,12 +481,15 @@ if [[ $isReuse == 0 ]]; then
 fi
 
 # Sync
-if [[ $isReuse == 0 ]]; then
+if [[ $isReuse == 0 ]] || [[ -z $(cat $MERGEDREPOS | grep -w synced) ]]; then
     repo sync -j"$(nproc)"
     if [[ $? != 0 ]]; then
         echo -e "${RED}Sync failed. Fix the errors and press any key to continue${NC}" >&2
         read -n 1 -r -s
     fi
+    echo -en "${GREEN}"
+    echo -e "synced" | tee -a $MERGEDREPOS
+    echo -en "${NC}"
 else
     announced=0
 fi
