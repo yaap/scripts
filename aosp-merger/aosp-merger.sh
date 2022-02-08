@@ -30,13 +30,18 @@ usage() {
 
 # checks out to the original branch saved in $SAVEDBRANCHES
 # if not found checks back to the default
+# $1 == 1 when checking out after a push
 gco_original() {
     lineNO=$(grep -nw -m 1 $PROJECTPATH $SAVEDBRANCHES | grep -Eo '^[^:]+')
     if [[ $? == 0 ]]; then
         line=$(sed "${lineNO}q;d" $SAVEDBRANCHES)
         line=$(echo $line | sed "s,^.*-> ,,")
         echo -e "Returning to ${BLUE}${line}${NC} on ${BLUE}${PROJECTPATH}${NC}"
-        git checkout $line > /dev/null 2>&1
+        if [[ $1 != 1 ]]; then
+            git checkout $line > /dev/null 2>&1
+        else
+            git checkout -B $line > /dev/null 2>&1
+        fi
     else
         echo -en "${YELLOW}Default branch for ${BLUE}${PROJECTPATH}${YELLOW} not found. "
         echo -e "Checking out to ${BLUE}${DEFAULTREMOTE}/${DEFAULTBRANCH}${NC}"
@@ -55,7 +60,7 @@ git_push() {
         echo "#### Pushing and returning to default remote and branch ####"
         git push $DEFAULTREMOTE $STAGINGBRANCH:$DEFAULTBRANCH
         git checkout $DEFAULTREMOTE/$DEFAULTBRANCH > /dev/null 2>&1
-        git branch -d $STAGINGBRANCH
+        gco_original 1
         echo -en "${GREEN}"
         echo -e "pushed\t\t${PROJECTPATH}" | tee -a $MERGEDREPOS
         echo -en "${NC}"
@@ -72,9 +77,14 @@ git_push_manifest_make() {
         echo -en "${GREEN}"
         echo -e "pushed\t\tbuild/make" | tee -a $MERGEDREPOS
         echo -en "${NC}"
+        git checkout -B $DEFAULTBRANCH
         git branch -d $STAGINGBRANCH
         cd "${TOP}/.repo/manifests" || exit 2
-        git push origin $STAGINGBRANCH:$DEFAULTBRANCH
+        git push $DEFAULTREMOTE $STAGINGBRANCH:$DEFAULTBRANCH
+        git fetch > /dev/null 2>&1
+        cd "${TOP}/manifest" || exit 2
+        git fetch > /dev/null 2>&1
+        git rebase > /dev/null 2>&1
         echo -en "${GREEN}"
         echo -e "pushed\t\tmanifest" | tee -a $MERGEDREPOS
         echo -en "${NC}"
