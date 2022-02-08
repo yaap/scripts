@@ -131,11 +131,13 @@ sanity_check() {
             continue
         fi
         if [[ -n $(cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w invalid) ]]; then
+            isWarn=1
             echo -en "${YELLOW}Project ${BLUE}${PROJECTPATH}${YELLOW} was marked as "
             echo -e "invalid but is not blacklisted${NC}"
             continue
         fi
         if [[ -n $(cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w fail) ]]; then
+            isWarn=1
             echo -en "${YELLOW}Project ${BLUE}${PROJECTPATH}${YELLOW} failed the merge "
             echo -e "and was skipped by user${NC}"
             continue
@@ -148,6 +150,7 @@ sanity_check() {
             # did we push an empty merge?
             cd "${TOP}/${PROJECTPATH}" || exit 2
             if [[ -z $(git --no-pager diff HEAD^) ]]; then
+                isWarn=1
                 echo -en "${YELLOW}An empty merge in ${BLUE}${PROJECTPATH}${YELLOW} was pushed. "
                 echo -e "double check it${NC}"
             fi
@@ -174,6 +177,7 @@ sanity_check() {
         fi
         # if we arrived here and project is marked as pushed we have no data to decide
         if [[ -n $(cat $MERGEDREPOS | grep -w $PROJECTPATH | grep -w pushed) ]]; then
+            isWarn=1
             echo -e "${YELLOW}Project ${BLUE}${PROJECTPATH}${YELLOW} was pushed with no merge${NC}"
         fi
     done
@@ -196,7 +200,7 @@ sanity_check() {
     else
         echo -en "${GREEN}Sanity check passed"
         if [[ $isWarn == 1 ]]; then
-            echo -en " with warnings - view above"
+            echo -en " with ${YELLOW}warnings${GREEN} - view above"
         fi
         echo -e "${NC}"
     fi
