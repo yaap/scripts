@@ -15,7 +15,6 @@ prebuilts/clang/host/linux-x86
 prebuilts/clang/host/linux-x86/clang-proton
 prebuilts/gcc/linux-x86/aarch64/aarch64-elf
 system/apex
-system/netd
 system/qcom
 manifest
 build/make
