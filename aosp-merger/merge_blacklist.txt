@@ -59,3 +59,9 @@ vendor/nxp/opensource/pn5xx/halimpl
 vendor/nxp/opensource/sn100x/halimpl
 vendor/qcom/opensource/usb
 vendor/qcom/opensource/fm-commonsys
+hardware/qcom-caf/sm8350/audio
+hardware/qcom-caf/sm8350/display
+hardware/qcom-caf/sm8350/media
+vendor/qcom/opensource/audio-hal/st-hal
+vendor/qcom/opensource/display
+vendor/qcom/opensource/commonsys/display
