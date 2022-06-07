@@ -65,3 +65,5 @@ hardware/qcom-caf/sm8350/media
 vendor/qcom/opensource/audio-hal/st-hal
 vendor/qcom/opensource/display
 vendor/qcom/opensource/commonsys/display
+packages/apps/PhotonCamera
+packages/apps/SetupWizard
