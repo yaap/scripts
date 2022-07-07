@@ -67,3 +67,4 @@ vendor/qcom/opensource/display
 vendor/qcom/opensource/commonsys/display
 packages/apps/PhotonCamera
 packages/apps/SetupWizard
+packages/apps/ExactCalculator
