@@ -292,7 +292,7 @@ fi
 . build/envsetup.sh
 
 # global vars / settings
-DEFAULTBRANCH="twelve" # default branch name
+DEFAULTBRANCH="thirteen" # default branch name
 DEFAULTREMOTE="yaap" # default remote name
 WAIT_ON_CONFLICT=true # should the script halt to allow fixing conflicts
 
