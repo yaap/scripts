@@ -68,3 +68,5 @@ vendor/qcom/opensource/commonsys/display
 packages/apps/PhotonCamera
 packages/apps/SetupWizard
 packages/apps/ExactCalculator
+external/zlib-ng
+packages/apps/GmsCompat

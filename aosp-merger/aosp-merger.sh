@@ -474,7 +474,7 @@ for PROJECTPATH in ${PROJECTPATHS} .repo/manifests; do
         if [[ $LOCALBRANCH != "HEAD" ]]; then
             echo "${PROJECTPATH} -> ${LOCALBRANCH}" >> $SAVEDBRANCHES
         else
-            echo "${PROJECTPATH} -> ${DEFAULTREMOTE}/${DEFAULTBRANCH}" >> $SAVEDBRANCHES
+            echo "${PROJECTPATH} -> ${DEFAULTBRANCH}" >> $SAVEDBRANCHES
         fi
         # Making sure we are checked-out to the head of the default remote
         git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
