@@ -44,8 +44,8 @@ gco_original() {
         fi
     else
         echo -en "${YELLOW}Default branch for ${BLUE}${PROJECTPATH}${YELLOW} not found. "
-        echo -e "Checking out to ${BLUE}${DEFAULTREMOTE}/${DEFAULTBRANCH}${NC}"
-        git checkout $DEFAULTREMOTE/$DEFAULTBRANCH > /dev/null 2>&1
+        echo -e "Resetting to ${BLUE}${DEFAULTREMOTE}/${DEFAULTBRANCH}${NC}"
+        git reset --hard $DEFAULTREMOTE/$DEFAULTBRANCH > /dev/null 2>&1
     fi
     git branch -D $STAGINGBRANCH
     echo -e "Removed ${BLUE}${STAGINGBRANCH}${NC}"
@@ -59,7 +59,7 @@ git_push() {
     if [[ $ans == 'y' ]]; then
         echo "#### Pushing and returning to default remote and branch ####"
         git push $DEFAULTREMOTE $STAGINGBRANCH:$DEFAULTBRANCH
-        git checkout $DEFAULTREMOTE/$DEFAULTBRANCH > /dev/null 2>&1
+        git reset --hard $DEFAULTREMOTE/$DEFAULTBRANCH > /dev/null 2>&1
         gco_original 1
         echo -en "${GREEN}"
         echo -e "pushed\t\t${PROJECTPATH}" | tee -a $MERGEDREPOS
@@ -330,12 +330,11 @@ if [[ $isResetOriginal == 1 ]]; then
             line=$(sed "${lineNO}q;d" $SAVEDBRANCHES)
             line=$(echo $line | sed "s,^.*-> ,,")
             echo -e "Resetting ${BLUE}${line}${NC} on ${BLUE}${PROJECTPATH}${NC}"
-            git checkout $DEFAULTREMOTE/$DEFAULTBRANCH > /dev/null 2>&1
             git checkout -B $line > /dev/null 2>&1
         else
             echo -en "${YELLOW}Default branch for ${BLUE}${PROJECTPATH}${YELLOW} not found. "
             echo -e "Checking out to ${BLUE}${DEFAULTREMOTE}/${DEFAULTBRANCH}${NC}"
-            git checkout $DEFAULTREMOTE/$DEFAULTBRANCH > /dev/null 2>&1
+            git reset --hard $DEFAULTREMOTE/$DEFAULTBRANCH > /dev/null 2>&1
         fi
         git branch -D $STAGINGBRANCH
         echo -e "Removed ${BLUE}${STAGINGBRANCH}${NC}"
@@ -481,7 +480,7 @@ for PROJECTPATH in ${PROJECTPATHS} .repo/manifests; do
             echo "${PROJECTPATH} -> ${DEFAULTBRANCH}" >> $SAVEDBRANCHES
         fi
         # Making sure we are checked-out to the head of the default remote
-        git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
+        git reset --hard $DEFAULTREMOTE/$DEFAULTBRANCH
     fi
 done
 echo -e "${GREEN}#### Verification complete - no uncommitted changes found ####${NC}"
@@ -535,7 +534,7 @@ for PROJECTPATH in ${PROJECTPATHS}; do
     fi
     cd "${TOP}/${PROJECTPATH}" || exit 2
     echo -e "Now working on ${BLUE}${PROJECTPATH}${NC}"
-    git checkout $DEFAULTREMOTE/$DEFAULTBRANCH
+    git reset --hard $DEFAULTREMOTE/$DEFAULTBRANCH
     git checkout -b "${STAGINGBRANCH}"
     git branch --set-upstream-to=$DEFAULTREMOTE/$DEFAULTBRANCH
     aospremote
