@@ -299,7 +299,9 @@ WAIT_ON_CONFLICT=true # should the script halt to allow fixing conflicts
 TOP="${ANDROID_BUILD_TOP}"
 MERGEDREPOS="${TOP}/merged_repos.txt"
 SAVEDBRANCHES="${TOP}/saved_branches.list"
+BLACKLIST="${TOP}/scripts/aosp-merger/merge_blacklist.txt"
 MANIFEST="${TOP}/.repo/manifests/snippets/yaap.xml"
+DEFAULT_MANIFEST="${TOP}/.repo/manifests/default.xml"
 STAGINGBRANCH="staging/${DEFAULTBRANCH}-${NEWTAG}"
 
 # Build a list of forked repos
@@ -307,7 +309,9 @@ PROJECTPATHS=$(grep "remote=\"$DEFAULTREMOTE\"" "${MANIFEST}" | sed -n 's/.*path
 
 # Remove blacklisted (non-aosp / not to merge) repos
 for PROJECTPATH in ${PROJECTPATHS}; do
-    if grep -q -x $PROJECTPATH $TOP/scripts/aosp-merger/merge_blacklist.txt; then
+    if [[ -z $(grep -w "path=\"$PROJECTPATH\"" $DEFAULT_MANIFEST) ]]; then
+        PROJECTPATHS=("${PROJECTPATHS[@]/$PROJECTPATH}")
+    elif grep -q -x $PROJECTPATH $BLACKLIST; then
         PROJECTPATHS=("${PROJECTPATHS[@]/$PROJECTPATH}")
     fi
 done
@@ -504,7 +508,7 @@ fi
 
 # Sync
 if [[ $isReuse == 0 ]] || [[ -z $(cat $MERGEDREPOS | grep -w synced) ]]; then
-    repo sync -j"$(nproc)"
+    repo sync --no-manifest-update -j"$(nproc)"
     if [[ $? != 0 ]]; then
         echo -e "${RED}Sync failed. Fix the errors and press any key to continue${NC}" >&2
         read -n 1 -r -s

@@ -10,6 +10,7 @@ Simply run the script from source top as follows:
 * set `DEFAULTREMOTE` to the default remote name
 * set `WAIT_ON_CONFLICT` to `true` or `false` according to preference
 * set `MANIFEST` var to the path of the manifest xml to search
+* set `DEFAULT_MANIFEST` var to the path of aosp manifest
 * add repos *paths* that should not be upstreamed to `merge_blacklist.txt` -
 separated by newline
 
