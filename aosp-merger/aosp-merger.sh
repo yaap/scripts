@@ -80,7 +80,7 @@ git_push_manifest_make() {
         git checkout -B $DEFAULTBRANCH
         git branch -d $STAGINGBRANCH
         cd "${TOP}/.repo/manifests" || exit 2
-        git push $DEFAULTREMOTE $STAGINGBRANCH:$DEFAULTBRANCH
+        git push origin $STAGINGBRANCH:$DEFAULTBRANCH
         git fetch > /dev/null 2>&1
         cd "${TOP}/manifest" || exit 2
         git fetch > /dev/null 2>&1
@@ -292,7 +292,7 @@ fi
 . build/envsetup.sh
 
 # global vars / settings
-DEFAULTBRANCH="thirteen" # default branch name
+DEFAULTBRANCH="fourteen" # default branch name
 DEFAULTREMOTE="yaap" # default remote name
 WAIT_ON_CONFLICT=true # should the script halt to allow fixing conflicts
 
