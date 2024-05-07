@@ -49,6 +49,10 @@ gco_original() {
     fi
     git branch -D $STAGINGBRANCH
     echo -e "Removed ${BLUE}${STAGINGBRANCH}${NC}"
+    git tag -d $OLDTAG
+    echo -e "Removed ${BLUE}${OLDTAG}${NC}"
+    git tag -d $NEWTAG
+    echo -e "Removed ${BLUE}${NEWTAG}${NC}"
 }
 
 # pushes the repo to $DEFAULTREMOTE/$DEFAULTBRANCH after prompting
@@ -414,8 +418,8 @@ if [[ $isDiff == 1 ]]; then
         cd "${TOP}/${PROJECTPATH}" || exit 2
         aospremote
         echo -e "Diff for ${BLUE}${PROJECTPATH}${NC}"
-        git fetch -q --tags aosp "${OLDTAG}"
-        git fetch -q --tags aosp "${NEWTAG}"
+        git fetch -q --no-tags aosp "+refs/tags/${OLDTAG}:refs/tags/${OLDTAG}"
+        git fetch -q --no-tags aosp "+refs/tags/${NEWTAG}:refs/tags/${NEWTAG}"
         if [[ $ans != 'n' ]]; then
             echo "Diff for ${PROJECTPATH}:" >> "${TOP}/${NEWTAG}.diff"
             git --no-pager diff $OLDTAG $NEWTAG | tee -a "${TOP}/${NEWTAG}.diff"
@@ -492,12 +496,12 @@ if [[ $isReuse == 0 ]]; then
     cd .repo/manifests || exit 2
     git checkout -b "${STAGINGBRANCH}"
     git branch --set-upstream-to=origin/$DEFAULTBRANCH
-    git fetch https://android.googlesource.com/platform/manifest $NEWTAG
+    git fetch --no-tags https://android.googlesource.com/platform/manifest "+refs/tags/${NEWTAG}:refs/tags/${NEWTAG}"
     git merge FETCH_HEAD
     cd ../../build/make || exit 2
     git checkout -b "${STAGINGBRANCH}"
     git branch --set-upstream-to=$DEFAULTREMOTE/$DEFAULTBRANCH
-    git fetch https://android.googlesource.com/platform/build $NEWTAG
+    git fetch --no-tags https://android.googlesource.com/platform/build "+refs/tags/${NEWTAG}:refs/tags/${NEWTAG}"
     git merge FETCH_HEAD
     echo -en "${GREEN}#### build/make & manifest merged."
     echo -e " ${RED}Please manually solve conflicts and commit${GREEN} ####${NC}"
@@ -538,7 +542,8 @@ for PROJECTPATH in ${PROJECTPATHS}; do
     git checkout -b "${STAGINGBRANCH}"
     git branch --set-upstream-to=$DEFAULTREMOTE/$DEFAULTBRANCH
     aospremote
-    git fetch -q --tags aosp "${NEWTAG}"
+    git fetch -q --no-tags aosp "+refs/tags/${OLDTAG}:refs/tags/${OLDTAG}"
+    git fetch -q --no-tags aosp "+refs/tags/${NEWTAG}:refs/tags/${NEWTAG}"
 
     # Making sure aosp remote is valid
     if [[ $? != 0 ]]; then
