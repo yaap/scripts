@@ -213,6 +213,7 @@ sanity_check() {
 
 # Handle flags
 flagCount=0
+isCleanup=0
 isRemoveStaging=0
 isPushStaging=0
 isResetOriginal=0
@@ -246,6 +247,18 @@ while [[ $# -gt 2 ]]; do
             read ans
             if [[ $ans == 'y' ]]; then
                 isResetOriginal=1
+            else
+                echo -e "${RED}Aborting${NC}"
+                exit 0
+            fi
+            ((flagCount++))
+            shift
+            ;;
+        "--cleanup") # gcs all related repos - useful after fetching AOSP
+            echo -en "Are you sure? y/[n] > "
+            read ans
+            if [[ $ans == 'y' ]]; then
+                isCleanup=1
             else
                 echo -e "${RED}Aborting${NC}"
                 exit 0
@@ -399,6 +412,32 @@ if [[ $isRemoveStaging == 1 ]]; then
     echo -e "Removed ${BLUE}${STAGINGBRANCH}${NC}"
     cd "${TOP}" || exit 2
     echo -e "${GREEN}Removed ${BLUE}${STAGINGBRANCH}${GREEN} from all forked repos${NC}"
+    exit 0
+fi
+
+if [[ $isCleanup == 1 ]]; then
+    for PROJECTPATH in ${PROJECTPATHS}; do
+        cd "${TOP}/${PROJECTPATH}" || exit 2
+        git branch -D $STAGINGBRANCH
+        git branch -D $NEWTAG
+        git branch -D $OLDTAG
+        git remote prune aosp
+        git gc --prune=now
+    done
+    # handling of build/make and manifest
+    cd "${TOP}/build/make" || exit 2
+    git branch -D $STAGINGBRANCH
+    git branch -D $NEWTAG
+    git branch -D $OLDTAG
+    git remote prune aosp
+    git gc --prune=now
+    cd "${TOP}/.repo/manifests" || exit 2
+    git branch -D $STAGINGBRANCH
+    git branch -D $NEWTAG
+    git branch -D $OLDTAG
+    git remote prune aosp
+    git gc --prune=now
+    cd "${TOP}" || exit 2
     exit 0
 fi
 

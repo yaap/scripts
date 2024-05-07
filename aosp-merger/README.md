@@ -26,6 +26,8 @@ Any non pushed repos will be checked out to a staging branch
 Will remove the staging branch for the given AOSP tag and exit
 ##### --push-staging
 Will push (to the set default remote and branch / saved branches in `saved_branches.list`) and remove the remaining staging branches, while prompting one by one
+##### --cleanup
+Runs git gc on the relevant repos. Should help save some space after the AOSP tags are deleted
 ##### --reset-original
 Will reset all original local branches to the new pushed heads after a merge.  
 Will also delete staging branches if any are still there
