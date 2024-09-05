@@ -309,11 +309,11 @@ fi
 . build/envsetup.sh
 
 # global vars / settings
-DEFAULTBRANCH="fourteen" # default branch name
+DEFAULTBRANCH="fifteen" # default branch name
 DEFAULTREMOTE="yaap" # default remote name
 WAIT_ON_CONFLICT=true # should the script halt to allow fixing conflicts
 
-TOP="${ANDROID_BUILD_TOP}"
+TOP="${T}"
 MERGEDREPOS="${TOP}/merged_repos.txt"
 SAVEDBRANCHES="${TOP}/saved_branches.list"
 BLACKLIST="${TOP}/scripts/aosp-merger/merge_blacklist.txt"
