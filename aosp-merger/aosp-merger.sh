@@ -71,18 +71,11 @@ git_push() {
     fi
 }
 
-# pushes manifest and build/make to $DEFAULTREMOTE/$DEFAULTBRANCH after prompting
-git_push_manifest_make() {
-    echo -en "${YELLOW}Push manifest and build/make? [n]/y > ${NC}"
+# pushes manifest to $DEFAULTREMOTE/$DEFAULTBRANCH after prompting
+git_push_manifest() {
+    echo -en "${YELLOW}Push manifest? [n]/y > ${NC}"
     read ans
     if [[ $ans == 'y' ]]; then
-        cd "${TOP}/build/make" || exit 2
-        git push $DEFAULTREMOTE $STAGINGBRANCH:$DEFAULTBRANCH
-        echo -en "${GREEN}"
-        echo -e "pushed\t\tbuild/make" | tee -a $MERGEDREPOS
-        echo -en "${NC}"
-        git checkout -B $DEFAULTBRANCH
-        git branch -d $STAGINGBRANCH
         cd "${TOP}/.repo/manifests" || exit 2
         git push origin $STAGINGBRANCH:$DEFAULTBRANCH
         git fetch > /dev/null 2>&1
@@ -185,13 +178,9 @@ sanity_check() {
             echo -e "${YELLOW}Project ${BLUE}${PROJECTPATH}${YELLOW} was pushed with no merge${NC}"
         fi
     done
-    # handling of build/make and manifest, just checking whether they are pushed
+    # handling manifest, just checking whether it was pushed
     if [[ -z $(cat $MERGEDREPOS | grep -w manifest | grep -w pushed) ]]; then
         echo -e "${BLUE}manifest${RED} was not pushed${NC}" >&2
-        isErr=1
-    fi
-    if [[ -z $(cat $MERGEDREPOS | grep -w build/make | grep -w pushed) ]]; then
-        echo -e "${BLUE}build/make${RED} was not pushed${NC}" >&2
         isErr=1
     fi
     # checking if a repo sync was done
@@ -356,11 +345,7 @@ if [[ $isResetOriginal == 1 ]]; then
         git branch -D $STAGINGBRANCH
         echo -e "Removed ${BLUE}${STAGINGBRANCH}${NC}"
     done
-    # handling of build/make and manifest
-    cd "${TOP}/build/make" || exit 2
-    echo -e "Resetting ${BLUE}${DEFAULTBRANCH}${NC} on ${BLUE}build/make${NC}"
-    git checkout -B $DEFAULTBRANCH
-    git branch -D $STAGINGBRANCH
+    # handling manifest
     cd "${TOP}/.repo/manifests" || exit 2
     echo -e "Resetting ${BLUE}${DEFAULTBRANCH}${NC} on ${BLUE}.repo/manifests${NC}"
     git checkout -B $DEFAULTBRANCH
@@ -380,7 +365,7 @@ if [[ $isPushStaging == 1 ]]; then
             git_push
         fi
     done
-    git_push_manifest_make
+    git_push_manifest
     echo -en "${YELLOW}Is the merge done (check for sanity)? [n]/y > ${NC}"
     read ans
     if [[ $ans == 'y' ]]; then
@@ -399,12 +384,7 @@ if [[ $isRemoveStaging == 1 ]]; then
             gco_original
         fi
     done
-    # handling of build/make and manifest
-    cd "${TOP}/build/make" || exit 2
-    echo -e "Returning to ${BLUE}${DEFAULTBRANCH}${NC} on ${BLUE}build/make${NC}"
-    git checkout $DEFAULTBRANCH
-    git branch -D $STAGINGBRANCH
-    echo -e "Removed ${BLUE}${STAGINGBRANCH}${NC}"
+    # handling manifest
     cd "${TOP}/.repo/manifests" || exit 2
     echo -e "Returning to ${BLUE}${DEFAULTBRANCH}${NC} on ${BLUE}.repo/manifests${NC}"
     git checkout $DEFAULTBRANCH
@@ -424,13 +404,7 @@ if [[ $isCleanup == 1 ]]; then
         git remote prune aosp
         git gc --prune=now
     done
-    # handling of build/make and manifest
-    cd "${TOP}/build/make" || exit 2
-    git branch -D $STAGINGBRANCH
-    git branch -D $NEWTAG
-    git branch -D $OLDTAG
-    git remote prune aosp
-    git gc --prune=now
+    # handling manifest
     cd "${TOP}/.repo/manifests" || exit 2
     git branch -D $STAGINGBRANCH
     git branch -D $NEWTAG
@@ -529,20 +503,16 @@ done
 echo -e "${GREEN}#### Verification complete - no uncommitted changes found ####${NC}"
 cd $TOP || exit 2
 
-# Merging build/make & manifest
+# Merging manifest
 if [[ $isReuse == 0 ]]; then
-    echo "#### Merging build/make & manifest ####"
+    echo "#### Merging manifest ####"
     cd .repo/manifests || exit 2
+    aospremote
     git checkout -b "${STAGINGBRANCH}"
     git branch --set-upstream-to=origin/$DEFAULTBRANCH
-    git fetch --no-tags https://android.googlesource.com/platform/manifest "+refs/tags/${NEWTAG}:refs/tags/${NEWTAG}"
+    git fetch --no-tags aosp "+refs/tags/${NEWTAG}:refs/tags/${NEWTAG}"
     git merge FETCH_HEAD
-    cd ../../build/make || exit 2
-    git checkout -b "${STAGINGBRANCH}"
-    git branch --set-upstream-to=$DEFAULTREMOTE/$DEFAULTBRANCH
-    git fetch --no-tags https://android.googlesource.com/platform/build "+refs/tags/${NEWTAG}:refs/tags/${NEWTAG}"
-    git merge FETCH_HEAD
-    echo -en "${GREEN}#### build/make & manifest merged."
+    echo -en "${GREEN}#### manifest merged"
     echo -e " ${RED}Please manually solve conflicts and commit${GREEN} ####${NC}"
     echo -e "Press any key to continue"
     read -n 1 -r -s
@@ -693,7 +663,7 @@ for PROJECTPATH in ${PROJECTPATHS}; do
     fi
 done
 
-git_push_manifest_make
+git_push_manifest
 
 echo -en "${YELLOW}Is the merge done (check for sanity)? [n]/y > ${NC}"
 read ans
