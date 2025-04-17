@@ -210,7 +210,7 @@ isDiff=0
 isCheck=0
 while [[ $# -gt 2 ]]; do
     case "$1" in
-        "--delete-staging") # delete the staging branch
+        "--delete-staging") # delete the staging branch )
             echo -en "Are you sure? y/[n] > "
             read ans
             if [[ $ans == 'y' ]]; then
@@ -222,7 +222,7 @@ while [[ $# -gt 2 ]]; do
             ((flagCount++))
             shift
             ;;
-        "--push-staging") # push all remaining staging branches to default remote/branch
+        "--push-staging") # push all remaining staging branches to default remote/branch )
             isPushStaging=1
             if [[ $isCheck == 1 ]]; then
                 isCheck=0
@@ -231,7 +231,7 @@ while [[ $# -gt 2 ]]; do
             fi
             shift
             ;;
-        "--reset-original") # resets original local branch to whatever was pushed
+        "--reset-original") # resets original local branch to whatever was pushed )
             echo -en "Are you sure? y/[n] > "
             read ans
             if [[ $ans == 'y' ]]; then
@@ -243,7 +243,7 @@ while [[ $# -gt 2 ]]; do
             ((flagCount++))
             shift
             ;;
-        "--cleanup") # gcs all related repos - useful after fetching AOSP
+        "--cleanup") # gcs all related repos - useful after fetching AOSP )
             echo -en "Are you sure? y/[n] > "
             read ans
             if [[ $ans == 'y' ]]; then
@@ -255,19 +255,19 @@ while [[ $# -gt 2 ]]; do
             ((flagCount++))
             shift
             ;;
-        "--diff") # show the diff between old and new tags and exit
+        "--diff") # show the diff between old and new tags and exit )
             isDiff=1
             ((flagCount++))
             shift
             ;;
-        "--check") # check for sanity
+        "--check") # check for sanity )
             if [[ $isPushStaging != 1 ]]; then
                 isCheck=1
                 ((flagCount++))
             fi
             shift
             ;;
-        --*|-*) # unsupported flags
+        --*|-*) # unsupported flags )
             echo -e "${RED}Unsupported flag ${BLUE}$1${NC}" >&2
             usage
             exit 1
@@ -298,7 +298,6 @@ fi
 . build/envsetup.sh
 
 # global vars / settings
-DEFAULTBRANCH="fifteen" # default branch name
 DEFAULTREMOTE="yaap" # default remote name
 WAIT_ON_CONFLICT=true # should the script halt to allow fixing conflicts
 
@@ -308,7 +307,34 @@ SAVEDBRANCHES="${TOP}/saved_branches.list"
 BLACKLIST="${TOP}/scripts/aosp-merger/merge_blacklist.txt"
 MANIFEST="${TOP}/.repo/manifests/snippets/yaap.xml"
 DEFAULT_MANIFEST="${TOP}/.repo/manifests/default.xml"
-STAGINGBRANCH="staging/${DEFAULTBRANCH}-${NEWTAG}"
+
+DEFAULTBRANCH=""
+STAGINGBRANCH=""
+inRemote=false
+inDefault=false
+while read -r -u9 line; do
+    if echo "$line" | grep -q "<remote"; then
+        inRemote=true
+    fi
+    if $inRemote; then
+        if echo "$line" | grep -q "name=\"${DEFAULTREMOTE}\""; then
+            inDefault=true
+        fi
+        if $inDefault; then
+            DEFAULTBRANCH=$(echo "$line" | grep "revision=")
+            if [[ $DEFAULTBRANCH != "" ]]; then
+                DEFAULTBRANCH=$(echo "$DEFAULTBRANCH" | xargs | cut -d "=" -f 2)
+                DEFAULTBRANCH=$(echo "$DEFAULTBRANCH" | sed "s/refs\/heads\///")
+                DEFAULTBRANCH=$(echo "$DEFAULTBRANCH" | sed "s/ //" | sed "s/\/>//")
+                STAGINGBRANCH="staging/${DEFAULTBRANCH}-${NEWTAG}"
+                break
+            fi
+        fi
+        if echo "$line" | grep -q "/>"; then
+            inRemote=false
+        fi
+    fi
+done 9< "${MANIFEST}"
 
 # Build a list of forked repos
 PROJECTPATHS=$(grep "remote=\"$DEFAULTREMOTE\"" "${MANIFEST}" | sed -n 's/.*path="\([^"]\+\)".*/\1/p')
