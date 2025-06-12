@@ -24,7 +24,7 @@ NC="\033[0m" # reset color
 
 # Outputs usage
 usage() {
-    echo -n "Usage: ${0} (--delete-staging) (--push-staging) (--reset-original)"
+    echo -n "Usage: ${0} (--delete-staging) (--push-staging) (--reset-original) (--checkout-new [branch])"
     echo " (--diff) (--check) <oldaosptag> <newaosptag>"
 }
 
@@ -206,6 +206,7 @@ isCleanup=0
 isRemoveStaging=0
 isPushStaging=0
 isResetOriginal=0
+isCheckoutToNew=0
 isDiff=0
 isCheck=0
 while [[ $# -gt 2 ]]; do
@@ -242,6 +243,18 @@ while [[ $# -gt 2 ]]; do
             fi
             ((flagCount++))
             shift
+            ;;
+        "--checkout-new") # checks out all tracked repos to a new branch )
+            echo -en "Are you sure? y/[n] > "
+            read ans
+            if [[ $ans == 'y' ]]; then
+                isCheckoutToNew="$2"
+            else
+                echo -e "${RED}Aborting${NC}"
+                exit 0
+            fi
+            ((flagCount++))
+            shift 2
             ;;
         "--cleanup") # gcs all related repos - useful after fetching AOSP )
             echo -en "Are you sure? y/[n] > "
@@ -376,6 +389,24 @@ if [[ $isResetOriginal == 1 ]]; then
     echo -e "Resetting ${BLUE}${DEFAULTBRANCH}${NC} on ${BLUE}.repo/manifests${NC}"
     git checkout -B $DEFAULTBRANCH
     git branch -D $STAGINGBRANCH
+    cd "${TOP}" || exit 2
+    exit 0
+fi
+
+if [[ $isCheckoutToNew != 0 ]]; then
+    echo "#### resetting original local branches to new remote heads ####"
+    for PROJECTPATH in ${PROJECTPATHS}; do
+        cd "${TOP}/${PROJECTPATH}" || exit 2
+        echo -e "Checking out to ${BLUE}${isCheckoutToNew}${NC} on ${BLUE}${PROJECTPATH}${NC}"
+        git checkout -B "$isCheckoutToNew" || continue
+        git branch --set-upstream-to="${DEFAULTREMOTE}/${isCheckoutToNew}"
+        cd "${TOP}" || exit 2
+    done
+    # handling manifest
+    cd "${TOP}/.repo/manifests" || exit 2
+    echo -e "Checking out to ${BLUE}${isCheckoutToNew}${NC} on ${BLUE}.repo/manifests${NC}"
+    git checkout -B "$isCheckoutToNew"
+    git branch --set-upstream-to="${DEFAULTREMOTE}/${isCheckoutToNew}"
     cd "${TOP}" || exit 2
     exit 0
 fi
