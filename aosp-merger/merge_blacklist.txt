@@ -1,3 +1,5 @@
 toolchain/pgo-profiles
 external/zlib
 packages/modules/Virtualization
+packages/apps/Nfc
+external/jemalloc_new
